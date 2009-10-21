@@ -1,0 +1,69 @@
+mode PLAIN
+{
+}
+
+menu File {
+    item    "&Open...\tF3"            { FileOpen }
+    item    "&Reload\tShift+F3"       { FileReload }
+    item    "&Save\tF2"               { FileSave }
+    item    "Save &As...\tShift+F2"   { FileSaveAs }
+    item    "Save Al&l\tCtrl+F2"      { FileSaveAll }
+    item    "&Close\tAlt+Q"           { FileClose }
+    item;
+    item    "&Next\tAlt+Left"         { FileNext }
+    item    "&Previous\tAlt+Right"    { FilePrev }
+    item;
+    item    "E&xit\tAlt+X"            { ExitEditor }
+}                              
+                               
+menu Edit {
+    item "&Undo\tAlt+BackSp" { Undo }
+    item "&Redo\tAlt+Shift+BackSp" { Redo }
+    item;                                
+    item "&Select"   { BlockMarkStream }
+    item "Cu&t\tShift+Del" { BlockCut }
+    item "&Copy\tCtrl+Ins" { BlockCopy }
+    item "&Paste\tShift+Ins" { BlockPasteStream }
+    item "Select &All"   { MoveFileStart; BlockBegin; MoveFileEnd; BlockEnd }
+    item "Select &None"   { BlockUnmark }
+    item;                        
+    item "&Delete line\tCtrl+Y" { KillLine }
+}
+
+menu Search {
+    item "&Find...\tCtrl+F" { Find }
+    item "Find and &replace...\tCtrl+R" { FindReplace }
+    item "Repeat &Last find\tCtrl+L" { FindRepeat }
+    item;
+    item "&Goto line...\tAlt+J" { MoveToLine }
+}               
+
+menu Main { 
+    submenu "&File",    File;
+    submenu "&Edit",    Edit;
+    submenu "&Search",  Search;
+}
+
+eventmap PLAIN { 
+# keymap for plaintext mode
+    MainMenu   = 'Main';    # menu for menubar
+
+    key       [Esc]     { MainMenu }
+    key     [A+F]       { MainMenu 'F' }
+    key     [A+E]       { MainMenu 'F' }
+    key     [A+S]       { MainMenu 'F' }
+
+    key     [G-Left]    { MoveLeft }
+    key     [G-Right]   { MoveRight }
+    key     [G-Up]      { MoveUp }
+    key     [G-Down]    { MoveDown }
+    key     [G-Home]    { MoveLineStart }
+    key     [G-End]     { MoveLineEnd }
+    key     [G-PgUp]    { MovePageUp }
+    key     [G-PgDn]    { MovePageDown }
+    key     [G-Enter]   { LineNew }
+    key       [BackSp]  { BackSpace }
+    key     [G-Ins]     { ToggleInsert }
+    key     [G-Del]     { Delete }
+    key       [Tab]     { InsertTab }
+}

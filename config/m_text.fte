@@ -1,0 +1,6 @@
+
+mode TEXT: PLAIN {              # Text files (wordwrap)
+    FileNameRx          = /\.\c{DOC}$/;
+# try also 1
+    WordWrap            = 2;
+}

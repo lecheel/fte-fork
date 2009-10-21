@@ -1,0 +1,13 @@
+#!/bin/bash
+cd config
+if [ -f fte-new.cnf ]; then
+	rm -f fte-new.cnf
+fi
+cfte main.fte
+cd ..        
+if [ -f ./config/fte-new.cnf ]; then
+	cp -f config/fte-new.cnf $HOME/.fterc
+        echo 'new .fterc is apply in you home'
+else 
+	echo 'No fte-new.cnf'
+fi

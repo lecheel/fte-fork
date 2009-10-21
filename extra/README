@@ -1,0 +1,46 @@
+FTE lechee edition 0.49.13-CT
+================== ===========
+
+   - add new vgrep c version instead perl
+   - patch LoadTag message (Ctrl-L)
+   
+        ** BRiEF Enhancement  **
+        - ctrl-l 	LoadTags manually
+        - alt-=         duplicate above char
+        - F4   		Comment Block Menu PopUP
+        - ctrl-g	Routine Regexp (Smart Mode)
+        
+---------------------------------------------------------------------------------
+
+1. modify from 0.49.13-cvs
+2. What's patch in 0.49.13-CT
+   - add modify k_brief.fte
+   	** BRiEF change in here **
+        - alt-h         Help all key binding is there
+   	- alt-' 	vgrep
+   	- F11   	View vgrep result
+   	- alt-y 	Mark current word and copy
+   	- alt-] 	forward search again
+   	- alt-[ 	backward search again
+   	- alt-. 	next buffer
+   	- alt-, 	pervios buffer
+        - alt-q		quit all
+        - alt-x		close buffer
+        - alt-/		complete word
+        - alt-g		goto line
+        - alt-i		insert toggle
+        - F7		match bracket () {} []
+        - F8            Save Desktop for resume automatic
+   
+   	- ctrl-x	cut
+   	- ctrl-v	paste
+   	- ctrl-c	copy
+   - patch tags can not back correctly
+   - add vgrep support via vgrep1.pl g2w.pl (with wide grep output)
+3. brief diff with cvs fte_cvs.diff
+4. customize fte is begin from config/main.fte
+5. cfte main.fte build your own fte layout
+6. add Makefile for binary release with FC4
+	- make ins
+        - make rc
+

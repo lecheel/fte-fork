@@ -1,0 +1,2 @@
+cfte main.fte
+cp -f fte-new.cnf /root/.fterc

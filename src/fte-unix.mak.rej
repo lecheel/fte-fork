@@ -1,0 +1,27 @@
+***************
+*** 5,11 ****
+  
+  #  vfte - for Linux console directly (with limitations, see con_linux.cpp)
+  
+- TARGETS = xfte vfte sfte nfte
+  #TARGETS = xfte
+  
+  PRIMARY = xfte
+--- 5,21 ----
+  
+  #  vfte - for Linux console directly (with limitations, see con_linux.cpp)
+  
++ ifneq "$(FTECONFIG)" "minimal"
++ ifneq "$(FTECONFIG)" "dosedit"
++ CFTE_TARGET=cfte
++ endif
++ endif
++ 
++ ifdef CROSS
++ NATIVE_PREFIX=native-
++ endif
++ 
++ TARGETS = nfte xfte
+  #TARGETS = xfte
+  
+  PRIMARY = xfte
