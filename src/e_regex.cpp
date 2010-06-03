@@ -16,7 +16,7 @@
 #include <malloc.h>
 #endif
 #include "e_regex.h"
-
+#include "fte.h"
 //#define DEBUG
 
 static int RegCount = 0;
@@ -564,7 +564,7 @@ void RxFree(RxNode *n) {
     }
 }
 
-#define ChClass(x) (((((x) >= 'A') && ((x) <= 'Z')) || (((x) >= 'a') && ((x) <= 'z')) || (((x) >= '0') && ((x) <= '9')))?1:0)
+#define ChClassB(x) (((((x) >= 'A') && ((x) <= 'Z')) || (((x) >= 'a') && ((x) <= 'z')) || (((x) >= '0') && ((x) <= '9')))?1:0)
 
 static RxMatchRes *match;
 static const char *bop;
@@ -641,13 +641,13 @@ int RxMatch(RxNode *rx) {
         case RE_ATBOW:
             if (rex >= eop) return 0;
             if (rex > bop) {
-                if ((ChClass(*rex) != 1) || (ChClass(*(rex-1)) != 0)) return 0;
+                if ((ChClassB(*rex) != 1) || (ChClassB(*(rex-1)) != 0)) return 0;
             }
             break;
         case RE_ATEOW:
             if (rex <= bop) return 0;
             if (rex < eop) {
-                if ((ChClass(*rex) != 0) || (ChClass(*(rex-1)) != 1)) return 0;
+                if ((ChClassB(*rex) != 0) || (ChClassB(*(rex-1)) != 1)) return 0;
             }
             break;
         case RE_CHAR:
@@ -823,6 +823,68 @@ int RxExec(RxNode *Regexp, const char *Data, int Len, const char *Start, RxMatch
             if (RxTry(Regexp, Start)) return 1;
         } while (Start++ < eop);
         break;
+    }
+    return 0;
+}
+
+int Get_Token(char *Tmp, char *Out, int Idx)
+{
+    int i=0;
+    char *pp=NULL;
+    char *Chk;
+    char inStr[512];
+    strcpy(inStr,Tmp);
+    Chk = strtok(inStr," ");
+    while (Chk != NULL)
+    {
+      if (Idx==i)
+        pp = strdup(Chk);
+      Chk = strtok(NULL, " ");
+      i++;
+    }
+    if (pp!=NULL)
+      strcpy(Out,pp);
+    return 0;
+}
+
+void mystrupr(char *s)
+{
+   while (*s) {
+      *s = toupper(*s);
+      s++;
+   }
+}
+
+
+
+int RxASM(const char *Data, int Len) {
+
+    int k=0;
+    char *SynASM[]={"PROC","MACRO","SEGMENT","ENDS",NULL};
+    char ChkStr[512];
+    char Sym[512];
+    strcpy(ChkStr,Data);
+    clrTAB(ChkStr);
+    LTrim(ChkStr);
+    strcat(ChkStr," ");
+    if ((strlen(ChkStr)>3)&&(ChkStr[0]!=';')) {
+    RTrim(ChkStr);
+    Sym[0]=0;
+    Get_Token(ChkStr,Sym,1);
+    LTrim(Sym);
+      k = 0;
+      do
+      {
+        if (SynASM[k]!=NULL)
+        {
+          if (!stricmp(Sym,SynASM[k]))
+            {
+              if (k>=2) return 2;
+              return 1;
+            }
+        }
+      }
+      while (SynASM[k++]!=NULL);
     }
     return 0;
 }

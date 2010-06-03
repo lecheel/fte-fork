@@ -13,7 +13,6 @@
 #ifndef MAXSEARCH
 #define MAXSEARCH 512
 #endif
-
 extern int ScreenSizeX;
 extern int ScreenSizeY;
 extern int CursorInsSize[2];
@@ -28,12 +27,13 @@ extern int WSStyleSearch;
 extern char PrintDevice[MAXPATH];
 extern char CompileCommand[256];
 extern char SearchPattern[MAXSEARCH];
+extern char CMark[256];
+extern char VDIR[256];
+extern char VMASK[256];
 extern char GrepName[MAXPATH];
-extern int  GrepLine;
-extern char VDIR[512];
-extern char VMASK[512];
-extern char CMark[512];
+extern int GrepLine;
 extern int KeepHistory;
+extern int BiosHome;
 extern int LoadDesktopOnEntry;
 extern int SaveDesktopOnExit;
 extern int KeepMessages;

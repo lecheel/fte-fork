@@ -246,7 +246,6 @@ mode GL: PLAIN {      # 4GL Mode
     SaveFolds           = 2;      # save fold info at end of line
     CommentStart        = ' {';
     CommentEnd          = '}';
-    CommentPat          = '';
 
     CursorThroughTabs = 0;
     DeleteKillTab = 1;

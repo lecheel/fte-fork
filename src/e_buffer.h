@@ -141,9 +141,7 @@ public:
     virtual ~EEditPort();
     
     virtual void HandleEvent(TEvent &Event);
-#ifdef CONFIG_MOUSE
     virtual void HandleMouse(TEvent &Event);
-#endif
     virtual void UpdateView();
     virtual void RepaintView();
     virtual void UpdateStatus();
@@ -450,6 +448,9 @@ public:
     
 #ifdef CONFIG_OBJ_ROUTINE
     int ScanForRoutines();
+    int ScanForASM();
+    int ScanForASMSymbol();
+    int ScanNormalRoutine();
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
@@ -496,6 +497,7 @@ public:
 //    int     MoveWordEnd();
     int     MoveLineStart();
     int     MoveLineEnd();
+    int     MoveLineComment(int Cols);
     int     MovePageUp();
     int     MovePageDown();
     int     MovePageLeft();
@@ -512,7 +514,6 @@ public:
     int     ScrollUp(int Lines);
     int     MoveToLine();
     int     FileGrepLine();
-    int     FileGrepName();
     int     MoveToColumn();
     int     MoveFirstNonWhite();
     int     MoveLastNonWhite();
@@ -652,7 +653,6 @@ public:
     int     BlockEnTab();
 
     int     ToggleAutoIndent();
-    int     ToggleAutoTag();
     int     ToggleInsert();
     int     ToggleExpandTabs();
     int     ToggleShowTabs();
@@ -756,7 +756,6 @@ public:
     int FindRepeatOnce(ExState &State);
     int FindRepeatReverse(ExState &State);
     int InsertChar(ExState &State);
-    int InsertAdupChar(ExState &State);
     int TypeChar(ExState &State);
     int ChangeMode(ExState &State);
     int ChangeKeys(ExState &State);
@@ -781,8 +780,8 @@ public:
     int IndentFunction();
     int MoveFunctionPrev();
     int MoveFunctionNext();
-    int BlockComment(ExState& state);
-    int BlockUnComment(ExState& state);   
+    int InsertComment(ExState& state);
+    int BlockComment(ExState& start);
     int InsertDate(ExState& state);
     int InsertUid();
 

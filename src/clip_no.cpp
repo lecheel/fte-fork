@@ -9,8 +9,6 @@
 
 #include "fte.h"
 
-
-
 int GetPMClip(int clipboard) {
     return 0;
 }

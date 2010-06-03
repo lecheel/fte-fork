@@ -143,9 +143,7 @@ typedef enum {
     ExMoveToLine,
     /// Move to line number given as argument
     ExFileGrepLine,
-    /// Move to line by grep index
-    ExFileGrepName,
-    /// Move to filename by grep index
+    /// Move to line by Grep
     ExMoveToColumn,
     /// Move to column given as argument
     ExMoveSavedPosCol,
@@ -197,10 +195,6 @@ typedef enum {
     //& <A HREF="modes.html#ms.BackSpKillTab">BackSpKillTab</A>
     //& <A HREF="modes.html#ms.BackSpKillBlock">BackSpKillBlock</A>
 
-    ExBlockComment,
-    /// Insert comment as block operator
-    ExBlockUnComment,
-    /// Remove comment as block operator
     //<cmd_line> Line Commands
     ExLineInsert,
     /// Insert a new line before the current one.
@@ -214,7 +208,7 @@ typedef enum {
     ExLineNew,
     /// Append a new line and move to the beginning of new line.
     ExLineNews,
-    /// Append a new line with extra feature (vgrep)
+    /// Append a new line and move to the beginning of new line with GRP,IDX support
     ExLineIndent,
     /// Reindent current line.
     ExLineTrim,
@@ -393,8 +387,6 @@ typedef enum {
     /// Insert space
     ExInsertChar,
     /// Insert character argument at cursor position
-    ExInsertAdupChar,
-    /// Insert Above Dup Char
     ExTypeChar,
     /// Insert character at cursor position (expanding abbreviations)
     ExInsertTab,
@@ -422,12 +414,17 @@ typedef enum {
     /// Exchange last two files in ring.
     ExSwitchTo,
     /// Switch to numbered buffer given as argument
-
-    //<cmd_file> File Commands
+    ///<cmd_file> File Commands
     ExFileOpen,
     /// Open file
+//    ExAtagOpen,
+//    /// Open TAG file
+//    ExAtagBack,
+//    /// TAG back
     ExFileCheck,
-    /// CheckFile is founded or not (lechee)
+    /// CheckFile is founded or not
+    ExFileGrep,
+    /// Open Grep File
     ExFileOpenInMode,
     /// Open file in specified mode
     ExFileReload,
@@ -516,6 +513,8 @@ typedef enum {
     /// View currently open buffers
     ExListRoutines,
     /// Display routines in current source file
+    ExRoutinesList,
+    /// Enhance routines in current source file
     ExExitEditor,
     /// Exit FTE.
     ExShowEntryScreen,
@@ -523,11 +522,14 @@ typedef enum {
 
     //<cmd_compile> Compiler Support
     ExCompile,
-    /// Ask for Grep
+    ExCompileGrep,
+    //<cmd_Grep> Grep command
     ExGrep,
-    /// Ask for vGrep  (lechee)
+    /// Ask for Grep
     ExvGrep,
-    /// Ask for compile command and run compiler (lechee)
+    /// Ask for vGrep
+    ExWhereis,
+    /// Ask for Whereis
     ExRunCompiler,
     /// Run configured compile command
     ExViewMessages,
@@ -582,8 +584,6 @@ typedef enum {
 
     //<cmd_option> Option commands
     ExToggleAutoIndent,
-    ///
-    ExToggleAutoTag,
     ///
     ExToggleInsert,
     ///
@@ -710,6 +710,10 @@ typedef enum {
     /// Move cursor to previous function
     ExMoveFunctionNext,
     /// Move cursor to next function
+    ExBlockComment,
+    /// Insert comment as block operator
+    ExInsertComment,
+    /// Insert comment by date and env(bugfix)
     ExInsertDate,
     /// Insert date at cursor
     ExInsertUid,

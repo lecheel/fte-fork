@@ -365,7 +365,6 @@ EEventMap::~EEventMap() {
         }
     }
 
-    #ifdef CONFIG_ABBREV
     // free Abbrev's
     {
         EAbbrev *ab;
@@ -379,7 +378,6 @@ EEventMap::~EEventMap() {
             }
         }
     }
-    #endif
 
     // free keymap's
     {

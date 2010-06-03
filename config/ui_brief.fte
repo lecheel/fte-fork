@@ -1,7 +1,7 @@
 # Brief (work in progress)
 
 include 'ui_m_brief.fte'; # TODO
-include 'k_brief.fte'; # incomplete
+include 'ui_k_brief.fte'; # incomplete
 
 include 'menu/m_c.fte';
 include 'menu/m_html.fte';

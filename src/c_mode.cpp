@@ -49,7 +49,7 @@ EBufferFlags DefaultBufferFlags = {
         1,                  // IndentWTabs
         1,                  // Wrap.LeftMargin
         72,                 // Wrap.RightMargin
-        0,                  // See Thru Sel
+        1,                  // See Thru Sel
         0,                  // WordWrap
         0,                  // ShowMarkers
         1,                  // CursorThroughTabs
@@ -70,9 +70,8 @@ EBufferFlags DefaultBufferFlags = {
         0,                  // trim on save
         0,                  // save bookmarks
         1,                  // HilitTags
-        0,		    // ShowBookmarks
-        1,                  // MakeBackups
-        1                   // AutoTag
+        0,                  // ShowBookmarks
+        1                   // MakeBackups
     },
     {
         0,                  // Routine Regexp

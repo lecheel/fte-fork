@@ -12,7 +12,6 @@
 
 #include "e_regex.h"
 
-
 typedef unsigned short hlState;
 typedef unsigned char hsState;
 
@@ -82,8 +81,6 @@ int Indent_REXX(EBuffer *B, int Line, int PosCursor);
 int Indent_SIMPLE(EBuffer *B, int Line, int PosCursor);
 #endif
 
-#endif
-
  /*
   * NT has 2-byte charcode and attribute... Following is not portable to non-
   * intel; should be replaced by formal TCell definition' usage instead of
@@ -95,12 +92,8 @@ int Indent_SIMPLE(EBuffer *B, int Line, int PosCursor);
 #    define PCLI unsigned char
 #endif
 
-#ifdef CONFIG_SYNTAX_HILIT
 #define HILIT_CLRD() \
-    (Colors ? ((Color < COUNT_CLR) ? Colors[Color] : Color - COUNT_CLR) : hcPlain_Normal)
-#else
-#define HILIT_CLRD() hcPlain_Normal
-#endif
+    ((Color < COUNT_CLR) ? Colors[Color] : Color - COUNT_CLR)
 
 #define ColorChar() \
     do {\
@@ -158,26 +151,17 @@ int Indent_SIMPLE(EBuffer *B, int Line, int PosCursor);
         } \
     } while (0)
 
-#define HILIT_LINE_VARS(Line) \
+#define HILIT_VARS(ColorTable, Line) \
     PCLI *BPtr; \
     int BPos; \
+    ChColor *Colors = ColorTable; \
+    ChColor Color = CLR_Normal; \
     int i; \
     int len = Line->Count; \
     char *p = Line->Chars; \
     int NC = 0, C = 0; \
     int TabSize = BFI(BF, BFI_TabSize); \
     int ExpandTabs = BFI(BF, BFI_ExpandTabs);
-
-#define HILIT_COLOR_VARS(ColorTable, Line) \
-    ChColor *Colors = ColorTable; \
-    ChColor Color = CLR_Normal; \
-    HILIT_LINE_VARS(Line);
-
-#ifdef CONFIG_SYNTAX_HILIT
-#define HILIT_VARS(c, l) HILIT_COLOR_VARS(c, l)
-#else
-#define HILIT_VARS(c, l) HILIT_LINE_VARS(l)
-#endif
 
 //#define HILIT_VARS2()
 //    int len1 = len;
@@ -193,8 +177,6 @@ int Indent_SIMPLE(EBuffer *B, int Line, int PosCursor);
     C = NC;\
     continue;\
     }
-
-#ifdef CONFIG_SYNTAX_HILIT
 
 #define CK_MAXLEN 64
 

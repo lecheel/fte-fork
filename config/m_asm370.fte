@@ -136,7 +136,6 @@ mode ASM370: PLAIN {
     SaveFolds           = 2;      # save fold info at end of line
     CommentStart        = '*';
     CommentEnd          = '';
-    CommentPat          = '*';    
     KeepBackups         = 0;
     AutoIndent          = 1;
     Trim                = 1;

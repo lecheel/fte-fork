@@ -1,5 +1,4 @@
-#include "fte.h"
-#ifdef CONFIG_EXTERNAL_COMMAND
+
 #define MAX_PIPES 4
 
 #include <signal.h>
@@ -177,25 +176,3 @@ int GUI::ClosePipe(int id)
     Pipes[id].used = 0;
     return WEXITSTATUS(status);
 }
-#else
-#include "sysdep.h"
-int WaitPipeEvent(TEvent *Event,int WaitTime, int *fds, int nfds)
-{
-	fd_set readfds;
-	struct timeval tv;
-	struct timeval *timeout = NULL;
-	if(WaitTime >=0)
-	{
-		tv.tv_sec = WaitTime / 1000;
-		tv.tv_usec = (WaitTime % 1000) * 1000;
-		timeout = &tv;
-	}
-	FD_ZERO(&readfds);
-	int i;
-	for(i = 0; i < nfds; i++) { FD_SET(fds[i], &readfds);}
-	int rtn = select(sizeof(fd_set) * 8, &readfds, NULL, NULL, NULL);
-	if(rtn <= 0) return rtn;
-	for(i=0; i<nfds; i++) if(FD_ISSET(fds[i], &readfds)) return i+2;
-	return 0;
-}
-#endif

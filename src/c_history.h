@@ -62,7 +62,6 @@ int RetrieveBookmarks(EBuffer *buf);
  */
 int StoreBookmarks(EBuffer *buf);
 
-#endif
 /* history values */
 #define HIST_DEFAULT    0
 #define HIST_PATH       1
@@ -79,9 +78,10 @@ int StoreBookmarks(EBuffer *buf);
 #define HIST_CVS       12
 #define HIST_CVSDIFF   13
 #define HIST_CVSCOMMIT 14
-#define HIST_GREP      15
-#define HIST_BMASK     16
-#define HIST_GREPPATH  17
-
+#define HIST_BMASK     15
+#define HIST_WHEREIS   16
+#define HIST_GREP      17
+#define HIST_GREPPATH  18
+#endif
 
 #endif

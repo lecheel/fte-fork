@@ -9,8 +9,6 @@
 
 #include "fte.h"
 
-#ifdef CONFIG_OBJ_BUFFERS
-
 BufferView *BufferList = 0;
 
 BufferView::BufferView(int createFlags, EModel **ARoot): EList(createFlags, ARoot, "Buffers") {
@@ -263,4 +261,3 @@ void BufferView::GetTitle(char *ATitle, int MaxLen, char *ASTitle, int SMaxLen) 
     strncpy(ASTitle, "Buffers", SMaxLen);
     ASTitle[SMaxLen - 1] = 0;
 }
-#endif

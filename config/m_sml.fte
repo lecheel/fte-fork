@@ -61,6 +61,5 @@ mode SML: PLAIN {
     SaveFolds      = 2;
     CommentStart   = ' (*';
     CommentEnd     = '*)';
-    CommentPat          = '';
 }
 

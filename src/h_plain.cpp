@@ -12,14 +12,13 @@
 #define hsPLAIN_Normal 0
 
 int Hilit_Plain(EBuffer *BF, int /*LN*/, PCell B, int Pos, int Width, ELine* Line, hlState& State, hsState *StateMap, int *ECol) {
+    HILIT_VARS(BF->Mode->fColorize->Colors, Line);
 
-//    HILIT_VARS(NULL, Line);
-HILIT_VARS(BF->Mode->fColorize?BF->Mode->fColorize->Colors:NULL, Line);
 #ifdef CONFIG_WORD_HILIT
     int j = 0;
     
-    if (BF->Mode->fColorize && ( BF->Mode->fColorize->Keywords.TotalCount > 0 ||
-        BF->WordCount > 0) )
+    if (BF->Mode->fColorize->Keywords.TotalCount > 0 ||
+        BF->WordCount > 0)
     { /* words have to be hilited, go slow */
         for(i = 0; i < Line->Count;) {
             IF_TAB() else {
@@ -79,7 +78,6 @@ HILIT_VARS(BF->Mode->fColorize?BF->Mode->fColorize->Colors:NULL, Line);
     return 0;
 }
 
-#ifdef CONFIG_INDENT
 int Indent_Plain(EBuffer *B, int Line, int PosCursor) {
     int OI = B->LineIndented(Line);
     B->IndentLine(Line, B->LineIndented(Line - 1));
@@ -94,4 +92,3 @@ int Indent_Plain(EBuffer *B, int Line, int PosCursor) {
     }
     return 1;
 }
-#endif

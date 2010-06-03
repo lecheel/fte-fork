@@ -14,6 +14,5 @@ int GetPMClip(int clipboard) {
 }
 
 int PutPMClip(int clipboard) {
-    Msg(S_INFO,"_gpm");
     return 0;
 }

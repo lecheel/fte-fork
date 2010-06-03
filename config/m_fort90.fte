@@ -114,7 +114,6 @@ mode FORTRAN: PLAIN {
     SaveFolds           = 2;      # save fold info at end of line
     CommentStart        = ' !';
     CommentEnd          = '';
-    CommentPat          = '!';    
 
     # ? RoutineRegexp       = /^\w[\w_:*&~]+[\w\s_:*&~]@\([^;]*$/;
 }

@@ -101,7 +101,6 @@ public:
     void SetModel(EModel *AModel);
     void SelectModel(EModel *AModel);
     void SwitchToModel(EModel *AModel);
-    int KillFileGrp();
 
     void Activate(int GotFocus);
 
@@ -125,8 +124,10 @@ public:
     int FileLast();
     int FileSaveAll();
     int FileOpen(ExState &State);
+//    int AtagOpen();
+//    int AtagBack();
     int FileCheck(ExState &State);
-    int FileGrepName();
+    int FileGrep();
     int FileOpenInMode(ExState &State);
     int SetPrintDevice(ExState &State);
     int ToggleSysClipboard(ExState &State);
@@ -134,14 +135,19 @@ public:
     int ViewBuffers(ExState &State);
 #ifdef CONFIG_OBJ_ROUTINE
     int ViewRoutines(ExState &State);
+    int RoutinesList(ExState &State);
 #endif
 #ifdef CONFIG_OBJ_MESSAGES
     int Compile(ExState &State);
+    int CompileGrep(ExState &State);
     int Grep(ExState &State);
     int vGrep(ExState &State);
+    int Whereis(ExState &State);
+//    int PowerApp(ExState &State);
     int RunCompiler(ExState &State);
     int Compile(char *Command);
     int Grep(char *Command);
+    int Whereis(char *Command);
     int ViewMessages(ExState &State);
     int CompilePrevError(ExState &State);
     int CompileNextError(ExState &State);

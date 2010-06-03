@@ -110,9 +110,7 @@ typedef int ChColor;
 #define BFI_ShowBookmarks      48
 #define BFI_MakeBackups        49
 
-#define BFI_AutoTag            50
-#define BFI_COUNT              51
-
+#define BFI_COUNT              50
 
 #define BFS_RoutineRegexp       (0 | 256)
 #define BFS_DefFindOpt          (1 | 256)
@@ -124,7 +122,7 @@ typedef int ChColor;
 #define BFS_CompileCommand      (7 | 256)
 #define BFS_CommentPat          (8 | 256)
 
-#define BFS_COUNT               8
+#define BFS_COUNT               9
 
 #define BFS_WordChars           (100 | 256) // ext
 #define BFS_CapitalChars        (101 | 256)
@@ -207,6 +205,8 @@ extern EBufferFlags DefaultBufferFlags;
 #define FLAG_ReassignModelIds   59
 #define FLAG_RecheckReadOnly    60
 #define FLAG_XShellCommand      61
+#define FLAG_BiosHome           62
+
 
 #define EM_MENUS 2
 #define EM_MainMenu 0

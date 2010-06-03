@@ -11,8 +11,6 @@
 
 #include "fte.h"
 
-#ifdef CONFIG_HELP
-
 #include <windows.h>
 
 int EView::SysShowHelp(ExState &State, const char *word) {
@@ -39,4 +37,3 @@ int EView::SysShowHelp(ExState &State, const char *word) {
     }
     return 1;
 }
-#endif

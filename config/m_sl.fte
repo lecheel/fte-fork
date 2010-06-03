@@ -63,7 +63,7 @@ mode sl: PLAIN {      # SLang Mode
     Colorizer           = 'sl';
     AutoIndent          = 1;
     IndentMode          = 'sl';
-    TabSize             = 8; # think twice before changing this, historically
+    TabSize             = 3; # think twice before changing this, historically
                              # it's been known to cause a mess in sources ;-)
     MatchCase           = 1;
     Trim                = 1;
@@ -79,5 +79,4 @@ mode sl: PLAIN {      # SLang Mode
     SaveFolds           = 2;      # save fold info at end of line
     CommentStart        = ' %';
     CommentEnd          = '';
-    CommentPat          = '%';
 }

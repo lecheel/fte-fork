@@ -85,6 +85,5 @@ mode Ruby: PLAIN {               # Ruby mode
         SaveFolds           = 2;      # save fold info at end of line
         CommentStart        = ' #';
         CommentEnd          = '';
-        CommentPat          = '#';
 }
 

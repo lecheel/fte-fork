@@ -8,7 +8,6 @@
  */
 
 #include "fte.h"
-#ifdef CONFIG_OBJ_DIRECTORY
 #include "log.h"
 #include "s_files.h"
 #include "s_util.h"
@@ -16,6 +15,7 @@
 #include "c_commands.h"
 #include "c_history.h"
 
+#ifdef CONFIG_OBJ_DIRECTORY
 EDirectory::EDirectory(int createFlags, EModel **ARoot, char *aPath): EList(createFlags, ARoot, aPath) {
     char XPath[MAXPATH];
 
@@ -64,18 +64,8 @@ void EDirectory::DrawLine(PCell B, int Line, int Col, ChColor color, int Width) 
             Year = Mon = Day = Hour = Min = Sec = 0;
         }
 
-//        sprintf(s, " %04d/%02d/%02d %02d:%02d:%02d %8ld ",
-//                Year, Mon, Day, Hour, Min, Sec, Files[Line]->Size());
-        char SizeStr[16];
-        if (Files[Line]->Size() > 999999999)
-            sprintf(SizeStr, "%8s", "Very BIG");
-        else if (Files[Line]->Size() > 99999999)
-            sprintf(SizeStr, "%8s", "BIG");
-        else
-            sprintf(SizeStr, "%8ld", (long) Files[Line]->Size());
-
-        sprintf(s, " %04d/%02d/%02d %02d:%02d:%02d %s ",
-                Year, Mon, Day, Hour, Min, Sec, SizeStr);
+        sprintf(s, " %04d/%02d/%02d %02d:%02d:%02d %8ld ",
+                Year, Mon, Day, Hour, Min, Sec, Files[Line]->Size());
 
         strcat(s, Files[Line]->Name());
         s[strlen(s) + 1] = '\0';

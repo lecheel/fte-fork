@@ -52,7 +52,7 @@ extern int ShowVScroll;
 extern int ShowHScroll;
 extern int ShowMenuBar;
 
-int SystemClipboard = 1;
+int SystemClipboard = 0;
 int ScreenSizeX = -1, ScreenSizeY = -1;
 int ScrollBarWidth = 1;
 int CursorInsSize[2] = { 90, 100 };
@@ -67,14 +67,14 @@ char PrintDevice[MAXPATH] = "PRN";
 char PrintDevice[MAXPATH] = "\\DEV\\PRN";
 #endif
 char CompileCommand[256] = "make";
-
-char SearchPattern[MAXSEARCH] = "";    //lechee
-char GrepName[MAXPATH] = "";
-int  GrepLine = 0;
-char VDIR[512] = "";
-char VMASK[512] = "";
-char VMark[512] = "";
+char SearchPattern[MAXSEARCH] = "";     // lechee
+char GrepName[MAXPATH] = "";            // lechee
+char VDIR[256] = "";                    // lechee200310
+char VMASK[256] = "";                   // lechee200310
+char CMark[256] = "";                   // lechee
+int GrepLine = 0;
 int KeepHistory = 0;
+int BiosHome = 0;
 int LoadDesktopOnEntry = 0;
 int SaveDesktopOnExit = 0;
 char WindowFont[64] = "";
@@ -92,10 +92,8 @@ char HelpCommand[128] = "man -a";
 char *ConfigSourcePath = 0;
 int IgnoreBufferList = 0;
 static GUICharactersEntry *GUICharacters = NULL;
-#ifdef CONFIG_OBJ_CVS
 char CvsCommand[256] = "cvs";
 char CvsLogMode[32] = "PLAIN";
-#endif
 int ReassignModelIds = 0;
 int RecheckReadOnly = 0;
 char XShellCommand[256] = "xterm";
@@ -209,10 +207,8 @@ static int SetModeString(EMode *mode, int what, const char *string) {
 #endif
         if (j == BFI_EventMap) {
             mode->fEventMap = FindEventMap(string);
-#ifdef CONFIG_INDENT
         } else if (j == BFI_IndentMode) {
             mode->Flags.num[j] = GetIndentMode(string);
-#endif
         } else if (j == BFS_WordChars) {
             SetWordChars(mode->Flags.WordChars, string);
         } else if (j == BFS_CapitalChars) {
@@ -279,6 +275,7 @@ static int SetGlobalNumber(int what, int number) {
     case FLAG_ShowMenuBar:       ShowMenuBar = number; break;
     case FLAG_ShowToolBar:       ShowToolBar = number; break;
     case FLAG_KeepHistory:       KeepHistory = number; break;
+    case FLAG_BiosHome:          BiosHome = number; break;
     case FLAG_LoadDesktopOnEntry: LoadDesktopOnEntry = number; break;
     case FLAG_SaveDesktopOnExit: SaveDesktopOnExit = number; break;
     case FLAG_KeepMessages:      KeepMessages = number; break;
@@ -313,10 +310,8 @@ static int SetGlobalString(long what, const char *string) {
     case FLAG_WindowFont: strlcpy(WindowFont, string, sizeof(WindowFont)); break;
     case FLAG_HelpCommand: strlcpy(HelpCommand, string, sizeof(HelpCommand)); break;
     case FLAG_GUICharacters: AppendGUICharacters (string); break;
-#ifdef CONFIG_OBJ_CVS
     case FLAG_CvsCommand: strlcpy(CvsCommand, string, sizeof(CvsCommand)); break;
     case FLAG_CvsLogMode: strlcpy(CvsLogMode, string, sizeof(CvsLogMode)); break;
-#endif
     case FLAG_XShellCommand: strlcpy(XShellCommand, string, sizeof(XShellCommand)); break;
     default:
         //printf("Unknown global string: %ld\n", what);
@@ -1101,7 +1096,6 @@ static int ReadConfigFile(CurPos &cp) {
             }
             break;
 
-#ifdef CONFIG_SYNTAX_HILIT
         case CF_COLORIZE:
             {
                 EColorize *Mode = 0;
@@ -1124,7 +1118,6 @@ static int ReadConfigFile(CurPos &cp) {
             }
             break;
 
-#endif
         case CF_MODE:
             {
                 EMode *Mode = 0;
@@ -1179,7 +1172,6 @@ static int ReadConfigFile(CurPos &cp) {
     }
     return -1;
 }
-#ifdef CONFIG_EXTERNAL_CONFIG
 
 int LoadConfig(int /*argc*/, char ** /*argv*/, char *CfgFileName) {
     STARTFUNC("LoadConfig");
@@ -1254,7 +1246,6 @@ int LoadConfig(int /*argc*/, char ** /*argv*/, char *CfgFileName) {
     }
     ENDFUNCRC(rc);
 }
-#endif
 
 static //const
 #include "defcfg.h"

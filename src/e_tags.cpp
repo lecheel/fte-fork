@@ -87,7 +87,7 @@ int _LNK_CONV cmptags(const void *p1, const void *p2) {
 #else
 int cmptags(const void *p1, const void *p2) {
 #endif
-    return strcmp(TagMem + TagD[*(int *)p1].Tag,
+    return stricmp(TagMem + TagD[*(int *)p1].Tag,
                   TagMem + TagD[*(int *)p2].Tag);
 }
 
@@ -380,9 +380,9 @@ int TagGoto(EView *View, char *Tag) {
 
     while (L < R) {
         M = (L + R) / 2;
-        cmp = strcmp(Tag, TagMem + TagD[TagI[M]].Tag);
+        cmp = stricmp(Tag, TagMem + TagD[TagI[M]].Tag);
         if (cmp == 0) {
-            while (M > 0 && strcmp(Tag, TagMem + TagD[TagI[M - 1]].Tag) == 0)
+            while (M > 0 && stricmp(Tag, TagMem + TagD[TagI[M - 1]].Tag) == 0)
                 M--;
 
             if (GotoTag(M, View) == 0)
@@ -410,7 +410,7 @@ int TagFind(EBuffer *B, EView *View, char *Tag) { /*FOLD00*/
     int L = 0, R = CTags, M, cmp;
 
     if (CurrentTag) {
-        if (strcmp(CurrentTag, Tag) == 0) {
+        if (stricmp(CurrentTag, Tag) == 0) {
             if (PushPos(B) == 0)
                 return 0;
 
@@ -429,9 +429,9 @@ int TagFind(EBuffer *B, EView *View, char *Tag) { /*FOLD00*/
 
     while (L < R) {
         M = (L + R) / 2;
-        cmp = strcmp(Tag, TagMem + TagD[TagI[M]].Tag);
+        cmp = stricmp(Tag, TagMem + TagD[TagI[M]].Tag);
         if (cmp == 0) {
-            while (M > 0 && strcmp(Tag, TagMem + TagD[TagI[M - 1]].Tag) == 0)
+            while (M > 0 && stricmp(Tag, TagMem + TagD[TagI[M - 1]].Tag) == 0)
                 M--;
 
             if (PushPos(B) == 0)
@@ -466,7 +466,7 @@ int TagDefined(char *Tag) {
     
     while (L < R) {
         M = (L + R) / 2;
-        cmp = strcmp(Tag, TagMem + TagD[TagI[M]].Tag);
+        cmp = stricmp(Tag, TagMem + TagD[TagI[M]].Tag);
         if (cmp == 0)
             return 1;
         else if (cmp < 0)
@@ -502,7 +502,7 @@ int TagComplete(char **Words, int *WordsPos, int WordsMax, char *Tag) {
             int N = M, w = 0;
             while(strncmp(Tag, TagMem + TagD[TagI[N]].Tag, len) == 0) {
                 // the first word is not tested for previous match
-                if (!w || strcmp(TagMem + TagD[TagI[N]].Tag,
+                if (!w || stricmp(TagMem + TagD[TagI[N]].Tag,
                                  TagMem + TagD[TagI[N-1]].Tag)) {
                     int l = strlen(TagMem + TagD[TagI[N]].Tag) - len;
                     if (l > 0) {
@@ -536,7 +536,7 @@ int TagNext(EView *View) { /*FOLD00*/
         return 0;
     }
 
-    if (TagPosition < CTags - 1 && strcmp(CurrentTag, TagMem + TagD[TagI[TagPosition + 1]].Tag) == 0) {
+    if (TagPosition < CTags - 1 && stricmp(CurrentTag, TagMem + TagD[TagI[TagPosition + 1]].Tag) == 0) {
         TagPosition++;
         if (GotoTag(TagPosition, View) == 0)
             return 0;
@@ -554,7 +554,7 @@ int TagPrev(EView *View) { /*FOLD00*/
         return 0;
     }
 
-    if (TagPosition > 0 && strcmp(CurrentTag, TagMem + TagD[TagI[TagPosition - 1]].Tag) == 0) {
+    if (TagPosition > 0 && stricmp(CurrentTag, TagMem + TagD[TagI[TagPosition - 1]].Tag) == 0) {
         TagPosition--;
         if (GotoTag(TagPosition, View) == 0)
             return 0;
@@ -565,27 +565,42 @@ int TagPrev(EView *View) { /*FOLD00*/
 }
 
 int TagPop(EView *View) { /*FOLD00*/
-    int rv=0;
     TagStack *T = TStack;
 
     assert(View != 0);
 
     if (T) {
         TStack = T->Next;
+
         if (CurrentTag)
         {
             free(CurrentTag);
             CurrentTag = NULL;
         }
-
+//
+//        if (T->CurrentTag)
+//        {
+//            CurrentTag = strdup(T->CurrentTag);
+//            TagPosition = T->TagPos;
+//
+//            if (GotoFilePos(View, T->FileName, T->Line, T->Col) == 0) {
+//                free(T);
+//                return 0;
+//            }
+//        }
         CurrentTag = T->CurrentTag;
         TagPosition = T->TagPos;
-        rv = GotoFilePos(View, T->FileName, T->Line, T->Col);
+
+        if (GotoFilePos(View, T->FileName, T->Line, T->Col) == 0) {
+            free(T);
+            return 0;
+        }
+
         free(T);
-        return rv;
+        return 1;
     }
     View->Msg(S_INFO, "Tag stack empty.");
-    return rv;
+    return 0;
 }
 
 #endif

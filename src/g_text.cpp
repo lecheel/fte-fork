@@ -17,7 +17,6 @@
 #include <malloc.h>
 #endif
 
-#include "feature.h"
 #include "console.h"
 #include "gui.h"
 #include "c_mode.h"
@@ -80,9 +79,7 @@ public:
     int ConCursorVisible();
     int ConSetCursorSize(int Start, int End);
     
-#ifdef CONFIG_MOUSE
     int CaptureMouse(int grab);
-#endif
     int CaptureFocus(int grab);
     
     int QuerySbVPos();
@@ -134,10 +131,8 @@ GViewPeer::GViewPeer(GView *view, int XSize, int YSize) {
 }
 
 GViewPeer::~GViewPeer() {
-#ifdef CONFIG_MOUSE
     if (MouseCapture == View)
         MouseCapture = 0;
-#endif
     if (FocusCapture == View)
         FocusCapture = 0;
 }
@@ -222,7 +217,6 @@ int GViewPeer::ConSetCursorSize(int Start, int End) {
         return 1;
 }
 
-#ifdef CONFIG_MOUSE
 int GViewPeer::CaptureMouse(int grab) {
     if (MouseCapture == 0) {
         if (grab)
@@ -237,7 +231,6 @@ int GViewPeer::CaptureMouse(int grab) {
     }
     return 1;
 }
-#endif
 
 int GViewPeer::CaptureFocus(int grab) {
     if (FocusCapture == 0) {
@@ -460,11 +453,9 @@ int GView::ConSetCursorSize(int Start, int End) {
     return Peer->ConSetCursorSize(Start, End);
 }
 
-#ifdef CONFIG_MOUSE
 int GView::CaptureMouse(int grab) {
     return Peer->CaptureMouse(grab);
 }
-#endif
 
 int GView::CaptureFocus(int grab) {
     return Peer->CaptureFocus(grab);
@@ -1201,9 +1192,7 @@ void GUI::ProcessEvent() {
                     if (id == -1) return;
                     frames->ConQuerySize(&Cols, &Rows);
                     int x = Cols / 2, y = Rows / 2;
-#ifdef CONFIG_MOUSE
                     ::ConQueryMousePos(&x, &y);
-#endif
                     
                     frames->Update(); // sync before menu
                     if (::ExecVertMenu(x, y, id, E, 0) != 1) {

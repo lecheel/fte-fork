@@ -16,13 +16,9 @@
 #if defined(UNIX)
 /* default locations for the configuration files */
 const char *Unix_RCPaths[] = {
-#ifdef SYSTEM_FTERC
-	SYSTEM_FTERC
-#else
     "/usr/local/etc/fte/system.fterc",
     "/etc/fte/system.fterc",
     "/usr/X11R6/lib/X11/fte/system.fterc",
-#endif
 };
 
 // variables used by vfte
@@ -110,7 +106,6 @@ char *getProgramName(char *name) {
 
 #endif
 
-#ifdef CONFIG_EXTERNAL_CONFIG
 static int GetConfigFileName(int /*argc*/, char **argv, char *ConfigFileName) {
     // NOTE: function assumes that ConfigFileName's size is MAXPATH
 
@@ -177,7 +172,6 @@ static int GetConfigFileName(int /*argc*/, char **argv, char *ConfigFileName) {
 #endif
     return 0;
 }
-#endif
 
 static int CmdLoadConfiguration(int &argc, char **argv) {
     int ign = 0;
@@ -194,7 +188,7 @@ static int CmdLoadConfiguration(int &argc, char **argv) {
                 }
                 int debug_clean = strcmp(argv[Arg], "--debugclean") == 0;
                 if (debug_clean || strcmp(argv[Arg], "--debug") == 0) {
-#ifdef CONFIG_LOGGING
+#ifndef FTE_NO_LOGGING
                     char path[MAXPATH];
 #ifdef UNIX
                     ExpandPath("~/.fte", path, sizeof(path));
@@ -231,19 +225,22 @@ static int CmdLoadConfiguration(int &argc, char **argv) {
             }
         }
     }
-#ifdef CONFIG_EXTERNAL_CONFIG
-    if (ign || !haveConfig && GetConfigFileName(argc, argv, ConfigFileName) == 0) {
+    if (!haveConfig && GetConfigFileName(argc, argv, ConfigFileName) == 0) {
+        // should we default to internal
+#ifdef DEFAULT_INTERNAL_CONFIG
+       ign = 1;
 #endif
+    }
+
+    if (ign) {
         if (UseDefaultConfig() == -1)
             DieError(1, "Error in internal configuration??? FATAL!");
-#ifdef CONFIG_EXTERNAL_CONFIG
     } else {
         if (LoadConfig(argc, argv, ConfigFileName) == -1)
             DieError(1,
                      "Failed to load configuration file '%s'.\n"
                      "Use '-C' option.", ConfigFileName);
     }
-#endif
     for (Arg = 1; Arg < argc; Arg++) {
         if (!QuoteAll && !QuoteNext && (argv[Arg][0] == '-')) {
             if (argv[Arg][1] == '-' && argv[Arg][2] == '\0') {
@@ -278,16 +275,12 @@ static int CmdLoadConfiguration(int &argc, char **argv) {
             if (LoadDesktopOnEntry == 2) {
                 LoadDesktopOnEntry = 0;
                 SaveDesktopOnExit = 0;
-#ifdef CONFIG_DESKTOP
                 DesktopFileName[0] = 0;
-#endif
             }
         }
     }
-#ifdef CONFIG_DESKTOP
     if (LoadDesktopOnEntry == 2)
         LoadDesktopOnEntry = 1;
-#endif
     return 1;
 }
 
@@ -330,12 +323,7 @@ int main(int argc, char **argv) {
     if (gui == 0 || g == 0)
         DieError(1, "Failed to initialize display\n");
 
-    if(gui->Run() != 0)
-    {
-        delete gui;
-        Usage();
-        return 1;
-    }
+    gui->Run();
 
 #if defined(OS2) && !defined(DBMALLOC) && defined(CHECKHEAP)
     if (_heapchk() != _HEAPOK)

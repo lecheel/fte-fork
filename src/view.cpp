@@ -8,9 +8,12 @@
  */
 
 #include "fte.h"
-
+#if defined(MSVC)
+#include "windows.h"
+#endif
 EView *ActiveView = 0;
 
+void RTrimS(char *str, char);
 extern BufferView *BufferList;
 
 EView::EView(EModel *AModel) {
@@ -146,15 +149,23 @@ int EView::ExecCommand(int Command, ExState &State) {
     case ExFilePrev:            return FilePrev();
     case ExFileNext:            return FileNext();
     case ExFileLast:            return FileLast();
+    case ExFileGrep:            return FileGrep();
     case ExFileOpen:            return FileOpen(State);
-    case ExFileGrepName:        return FileGrepName();
     case ExFileCheck:           return FileCheck(State);
+//    case ExAtagOpen:            return AtagOpen();
+//    case ExAtagBack:            return AtagBack();
     case ExFileOpenInMode:      return FileOpenInMode(State);
     case ExFileSaveAll:         return FileSaveAll();
 
     case ExListRoutines:
 #ifdef CONFIG_OBJ_ROUTINE
         return ViewRoutines(State);
+#else
+        return ErFAIL;
+#endif
+    case ExRoutinesList:
+#ifdef CONFIG_OBJ_ROUTINE
+        return RoutinesList(State);
 #else
         return ErFAIL;
 #endif
@@ -169,16 +180,22 @@ int EView::ExecCommand(int Command, ExState &State) {
 #ifdef CONFIG_OBJ_MESSAGES
     case ExViewMessages:        return ViewMessages(State);
     case ExCompile:             return Compile(State);
-    case ExRunCompiler:         return RunCompiler(State);
+    case ExCompileGrep:         return CompileGrep(State);
     case ExGrep:                return Grep(State);
     case ExvGrep:               return vGrep(State);
+//    case ExPowerApp:            return PowerApp(State);
+    case ExWhereis:             return Whereis(State);
+    case ExRunCompiler:         return RunCompiler(State);
     case ExCompilePrevError:    return CompilePrevError(State);
     case ExCompileNextError:    return CompileNextError(State);
 #else
     case ExViewMessages:        return ErFAIL;
     case ExCompile:             return ErFAIL;
+    case ExCompileGrep:         return ErFAIL;
     case ExGrep:                return ErFAIL;
     case ExvGrep:               return ErFAIL;
+//    case ExPowerApp:            return ErFAIL;
+    case ExWhereis:             return ErFAIL;
     case ExCompilePrevError:    return ErFAIL;
     case ExCompileNextError:    return ErFAIL;
 #endif
@@ -207,17 +224,14 @@ int EView::ExecCommand(int Command, ExState &State) {
     case ExViewCvsLog:          return ErFAIL;
 #endif
 
-#ifdef VIEWBUFFERS
     case ExViewBuffers:         return ViewBuffers(State);
-#endif
 
     case ExShowKey:             return ShowKey(State);
     case ExToggleSysClipboard:  return ToggleSysClipboard(State);
     case ExSetPrintDevice:      return SetPrintDevice(State);
     case ExShowVersion:         return ShowVersion();
-#ifdef CONFIG_VIEWMODEMAP
     case ExViewModeMap:         return ViewModeMap(State);
-#endif
+    case ExClearMessages:       return ClearMessages();
 
 #ifdef CONFIG_TAGS
     case ExTagNext:             return TagNext(this);
@@ -226,18 +240,11 @@ int EView::ExecCommand(int Command, ExState &State) {
     case ExTagClear:            TagClear(); return 1;
     case ExTagLoad:             return TagLoad(State);
 #endif
-#ifdef CONFIG_HELP
     case ExShowHelp:            return SysShowHelp(State, 0);
-#endif
-#ifdef CONFIG_OBJ_MESSAGES
-    case ExClearMessages:       return ClearMessages();
     case ExConfigRecompile:     return ConfigRecompile(State);
-#endif
-#ifdef CONFIG_BOOKMARKS
     case ExRemoveGlobalBookmark:return RemoveGlobalBookmark(State);
     case ExGotoGlobalBookmark:  return GotoGlobalBookmark(State);
     case ExPopGlobalBookmark:   return PopGlobalBookmark();
-#endif
     }
     return Model ? Model->ExecCommand(Command, State) : 0;
 }
@@ -346,17 +353,6 @@ int EView::FileLast() {
     return 0;
 }
 
-int EView::KillFileGrp() {
-    char s[512];
-    if (Model) {
-        EModel *n=Model->Next;
-        Model->GetName(s,sizeof(s));
-        Msg(S_INFO,"CT::%s",s);  //try to kill last fte.grp when vgrep is active
-        return 1;
-    }
-    return 0;
-}
-
 int EView::SwitchTo(ExState &State) {
     EModel *M;
     int No;
@@ -397,31 +393,16 @@ int EView::FileSaveAll() {
     return 1;
 }
 
-int EView::FileGrepName() {
+int EView::FileGrep() {
     if (strlen(GrepName)==0) return 0;
     return MultiFileLoad(0, GrepName, NULL, this);
 }
 
 int EView::FileCheck(ExState &State) {
     char FName[MAXPATH];
-#ifndef UNIX
-    char msHome[MAXPATH];
-#endif
-    char *myHome;
     FILE *in;
-#ifdef UNIX
-    myHome = getenv("HOME");
-#else
-    sprintf(msHome,"c:");
-    myHome = msHome;
-#endif
     if (State.GetStrParam(this, FName, sizeof(FName)) != 0) {
-#ifdef UNIX
-        if (!strcmp(FName,"fte.grp")) sprintf(FName,"%s/fte.grp",myHome);
-#else
-        if (!strcmp(FName,"fte.grp")) sprintf(FName,"%s\\fte.grp",myHome);
-#endif
-//        if (!strcmp(FName,"tag")) sprintf(FName,"%s\\ve.dat",GetTmpDir());
+        if (!strcmp(FName,"tag")) sprintf(FName,"%s\\ve.dat",GetTmpDir());
         if (( in = fopen(FName,"rb"))==NULL) {
                Msg(S_INFO,"Context history not founded.");
                return 0;
@@ -434,28 +415,13 @@ int EView::FileCheck(ExState &State) {
 
 int EView::FileOpen(ExState &State) {
     char FName[MAXPATH];
-#ifndef UNIX
-    char msHome[MAXPATH];
-#endif
-    char *myHome;
-#ifdef UNIX
-    myHome = getenv("HOME");
-#else
-    sprintf(msHome,"c:");
-    myHome = msHome;
-#endif
+
     if (State.GetStrParam(this, FName, sizeof(FName)) == 0) {
-        if (GetDefaultDirectory(Model, FName, sizeof(FName)) == 0) return 0;
+        if (GetDefaultDirectory(Model, FName, sizeof(FName)) == 0)
+            return 0;
         if (MView->Win->GetFile("Open file", sizeof(FName), FName, HIST_PATH, GF_OPEN) == 0) return 0;
-    } else {
-        if (!strcmp(FName,"fte.grp")) {
-#ifdef UNIX
-            sprintf(FName,"%s/fte.grp",myHome);
-#else
-            sprintf(FName,"%s\\fte.grp",myHome);
-#endif
-        }
     }
+
     if( strlen( FName ) == 0 ) return 0;
 
 #ifdef CONFIG_OBJ_DIRECTORY
@@ -486,7 +452,7 @@ int EView::FileOpenInMode(ExState &State) {
         return OpenDir(FName);
 #endif
 
-//    if( strlen( FName ) == 0 ) return 0;
+    if( strlen( FName ) == 0 ) return 0;
 
     return MultiFileLoad(0, FName, Mode, this);
 }
@@ -557,7 +523,6 @@ void EView::SetMsg(const char *msg) {
     }
 }
 
-#ifdef VIEWBUFFERS
 int EView::ViewBuffers(ExState &/*State*/) {
     if (BufferList == 0) {
         BufferList = new BufferView(0, &ActiveModel);
@@ -570,9 +535,33 @@ int EView::ViewBuffers(ExState &/*State*/) {
     }
     return 0;
 }
-#endif
 
 #ifdef CONFIG_OBJ_ROUTINE
+int EView::RoutinesList(ExState &) {
+    EModel *M;
+    EBuffer *Buffer;
+
+    M= Model;
+    if (M->GetContext() != CONTEXT_FILE)
+        return 0;
+    Buffer = (EBuffer *)M;
+
+    if (!stricmp(Buffer->Mode->fName,"ASM")) {
+        if (Buffer->ScanForASMSymbol()) return 1;
+        else {
+                Msg(S_INFO,"no ASM Routine Founded");
+                return 0;
+            }
+        } else {
+            if (Buffer->ScanNormalRoutine()) return 1;
+            else {
+                Msg(S_INFO,"no Routine Founded");
+                return 0;
+            }
+        }
+}
+
+
 int EView::ViewRoutines(ExState &/*State*/) {
     //int rc = 1;
     //RoutineView *routines;
@@ -666,8 +655,11 @@ int EView::Compile(ExState &State) {
     return Compile(Command);
 }
 
-int EView::RunCompiler(ExState &State) {
+int EView::CompileGrep(ExState &State) {
+    static char Cmd[256] = "";
     char Command[256] = "";
+    char BMask[256] = "*.cpp *.c *.h";
+    char *b;
 
     if (CompilerMsgs != 0 && CompilerMsgs->Running) {
         Msg(S_INFO, "Already running...");
@@ -677,20 +669,37 @@ int EView::RunCompiler(ExState &State) {
     if (State.GetStrParam(this, Command, sizeof(Command)) == 0) {
         if (Model->GetContext() == CONTEXT_FILE) {
             EBuffer *B = (EBuffer *)Model;
-            if (BFS(B, BFS_CompileCommand) != 0) 
-                strcpy(Command, BFS(B, BFS_CompileCommand));
+            if (BFS(B, BFS_CompileCommand) != 0)
+                strcpy(Cmd, BFS(B, BFS_CompileCommand));
         }
-        if (Command[0] == 0)
-            strcpy(Command, CompileCommand);
+        if (Cmd[0] == 0)
+            strcpy(Cmd, CompileCommand);
+
+        if (MView->Win->GetStr("CompileGrep", sizeof(Cmd), Cmd, HIST_COMPILE) == 0) return 0;
+
+        strcpy(Command, Cmd);
+    } else {
+        if (SearchPattern[0]!=0) {
+              strcat(Command,SearchPattern);
+              b = getenv("bmask");
+              if (b!=NULL) {
+                  strcpy(BMask,b);
+                  }
+            }
+        if (MView->Win->GetStr("CompileGrep", sizeof(Command), Command, HIST_COMPILE) == 0) return 0;
+        if (MView->Win->GetStr("Mask", sizeof(BMask), BMask, HIST_BMASK) == 0) return 0;
+        strcat(Command," ");
+        strcat(Command,BMask);
     }
     return Compile(Command);
 }
 
 int EView::Grep(ExState &State) { // lechee
-    static char Cmd[512] = "";
-    char Command[512] = "";
-    char SPath[512] = "";
-    char BMask[512] = "*.asm *.inc *.cpp *.c *.h";
+    static char Cmd[256] = "";
+    char Command[256] = "";
+    char SPath[256] = "";
+    char BMask[256] = "*.asm *.inc *.cpp *.c *.h";
+//    char hDIR[256] = "";
     char DoCmd[512] = "";
     char *B,*BD;
 
@@ -701,6 +710,9 @@ int EView::Grep(ExState &State) { // lechee
     BD = getenv("bhome");
     if (BD != NULL) {
         strcpy(SPath,BD);
+//        BD =getenv("TAGFILE");
+//        if (BD != NULL) RTrimS(SPath,SLASH);
+//        if (BiosHome) RTrimS(SPath,SLASH);
     } else {
        BD = getenv("tagfile");
        if (BD != NULL) {
@@ -732,54 +744,55 @@ int EView::Grep(ExState &State) { // lechee
         if (strlen(Command)==0) return 0;
         if (MView->Win->GetStr("Dir", sizeof(SPath), SPath, HIST_GREPPATH) == 0) return 0;
         if (SPath[strlen(SPath)-1]=='\\') SPath[strlen(SPath)-1]='\0';
-        if ((!strcmp(SPath,"."))||(strlen(SPath)==0)) GetStrVar(mvCurDirectory, SPath,512);
-//            GetCurrentDirectory(sizeof(SPath),SPath);
+#if defined(MSVC)
+        if ((!strcmp(SPath,"."))||(strlen(SPath)==0)) GetCurrentDirectory(sizeof(SPath),SPath);
+#endif
         if (MView->Win->GetStr("Mask",sizeof(BMask), BMask, HIST_BMASK) == 0) return 0;
         if (strlen(BMask)==0) strcpy(BMask,"*.*");
         Msg(S_INFO,"Grep in Progress ........");
     }
         sprintf(DoCmd,"BX !Greps! %s \"%s\" \"%s\"",Command,BMask,SPath);
+
     return Grep(DoCmd);
 }
 
-int EView::vGrep(ExState &State) {
-    static char Cmd[512] = "";
-    char Command[512] = "";
-    char SPath[512] = "";
-    char BMask[512] = "*.cpp";
+int EView::vGrep(ExState &State) { // lechee
+    static char Cmd[256] = "";
+    char Command[256] = "";
+    char SPath[256] = "";
+    char BMask[256] = "*.asm *.inc";
     char DoCmd[512] = "";
-    char myDir[512] = "";
-//    char *lMask;
-    char lMask[512] = "";
-    char *B,*BD,*myHome;
-//    KillFileGrp();
-//    return 0;
-    myHome = getenv("HOME");
+    char *B,*BD;
+
+
     if (strlen(VMASK)) {
-        strcpy(BMask,VMASK);
+       strcpy(BMask,VMASK);
     } else {
-        B = getenv("bmask");
-        if (B != NULL) {
-            strcpy(BMask,B);
-        }
-    }
+    B = getenv("bmask");
+      if (B != NULL) {
+          strcpy(BMask,B);
+          }
+}
+
     if (strlen(VDIR)) {
-        strcpy(SPath,VDIR);
+       strcpy(SPath,VDIR);
     } else {
-        BD = getenv("bhome");
-        if ( BD != NULL ) {
-            strcpy(SPath,BD);
-        } else {
-            BD = getenv("tagfile");
-            if (BD != NULL) {
-                strcpy(SPath,BD);
-            }
-        }
+       BD = getenv("bhome");
+       if (BD != NULL) {
+           strcpy(SPath,BD);
+//           if (BiosHome) RTrimS(SPath,SLASH);
+       } else {
+          BD = getenv("tagfile");
+          if (BD != NULL) {
+              strcpy(SPath,BD);
+          }
+    }
     }
     if (CompilerMsgs != 0 && CompilerMsgs->Running) {
-        Msg(S_INFO, " Already running...");
+        Msg(S_INFO, "Already running...");
         return 0;
     }
+    // Get String Parameter from CNF as command parameter
     if (State.GetStrParam(this, Command, sizeof(Command)) == 0) {
         if (Model->GetContext() == CONTEXT_FILE) {
             EBuffer *B = (EBuffer *)Model;
@@ -788,47 +801,98 @@ int EView::vGrep(ExState &State) {
         }
         if (Cmd[0] == 0)
             strcpy(Cmd, CompileCommand);
-        if (MView->Win->GetStr("vGrep", sizeof(Cmd), Cmd, HIST_GREP) == 0)
-            return 0;
+
+        if (MView->Win->GetStr("vGrep", sizeof(Cmd), Cmd, HIST_GREP) == 0) return 0;
         strcpy(Command, Cmd);
     } else {
-        if (strlen(SearchPattern)!=0) {
-            strcat(Command,SearchPattern);
-        }
+
+        if (strlen(SearchPattern)!=0) {   
+             strcat(Command,SearchPattern);
+             }
         if (MView->Win->GetStr("vGrep", sizeof(Command), Command, HIST_GREP) == 0) return 0;
         if (strlen(Command)==0) return 0;
         if (MView->Win->GetStr("Dir", sizeof(SPath), SPath, HIST_GREPPATH) == 0) return 0;
         if (SPath[strlen(SPath)-1]=='\\') SPath[strlen(SPath)-1]='\0';
-        if ((!strcmp(SPath,"."))||(strlen(SPath)==0)) {
-            //.ll            myDir=get_current_dir_name(); GetCurrentDirectory()
-            GetStrVar(mvCurDirectory, myDir,512);
-            strcpy(SPath,myDir);
-        }
-        if (MView->Win->GetStr("Mask",sizeof(BMask), BMask, HIST_BMASK) == 0) return 0;
-
-#ifdef UNIX
-        if (BMask[0]=='*') {
-            sprintf(lMask,"\\%s",BMask);
-        } else {
-            strcpy(lMask,BMask);
-        }
+#if defined(MSVC)
+        if ((!strcmp(SPath,"."))||(strlen(SPath)==0)) GetCurrentDirectory(sizeof(SPath),SPath);
 #endif
+        if (MView->Win->GetStr("Mask",sizeof(BMask), BMask, HIST_BMASK) == 0) return 0;
         if (strlen(BMask)==0) strcpy(BMask,"*.*");
         Msg(S_INFO,"vGrep in Progress ........");
     }
-//    sprintf(DoCheck,"%s/fte.grp",myHome);
-#ifdef NTCONSOLE
-    sprintf(DoCmd,"vgrep --grep %s \"%s\" \"%s\"",Command,SPath,BMask);
-#else
-    //    sprintf(DoCmd,"grep --include=%s -irn %s %s >%s/fte.grp",BMask,Command,SPath,myHome);
-    //    sprintf(DoCmd,"vgrep1.pl %s %s %s",Command, SPath,lMask);
-    sprintf(DoCmd,"vgrep --grep \"%s\" %s %s",Command, SPath, lMask);
-#endif
-    strcpy(VDIR,SPath);
-    strcpy(VMASK,BMask);
-//    Msg(S_INFO,"%s",DoCmd);
-//    return(0);
+        sprintf(DoCmd,"vgrep --grep %s \"%s\" \"%s\"",Command,SPath,BMask);
+        strcpy(VDIR,SPath);
+        strcpy(VMASK,BMask);
     return Grep(DoCmd);
+}
+
+
+int EView::Whereis(ExState &State) { // lechee
+    static char Cmd[256] = "";
+    char Command[256] = "";
+    char wdir[256] = "";
+    char DoCmd[256] ="";
+    char *D;
+
+    if (CompilerMsgs != 0 && CompilerMsgs->Running) {
+        Msg(S_INFO, "Already running...");
+        return 0;
+    }
+    // Get String Parameter from CNF as command parameter
+    if (State.GetStrParam(this, Command, sizeof(Command)) == 0) {
+        if (Model->GetContext() == CONTEXT_FILE) {
+            EBuffer *B = (EBuffer *)Model;
+            if (BFS(B, BFS_CompileCommand) != 0)
+                strcpy(Cmd, BFS(B, BFS_CompileCommand));
+        }
+        if (Cmd[0] == 0)
+            strcpy(Cmd, CompileCommand);
+
+        if (MView->Win->GetStr("WhereIS", sizeof(Cmd), Cmd, HIST_WHEREIS) == 0) return 0;
+        strcpy(Command, Cmd);
+    } else {
+        D = getenv("BHOME");
+        if (D != NULL) {
+            if (BiosHome) {
+              RTrimS(D,SLASH);
+            }
+            strcat(Command,D);
+          }
+        else {
+          D = getenv("TAGFILE");
+          if (D != NULL)
+              strcat(Command,D);
+          }
+        if (MView->Win->GetStr("WhereIS", sizeof(wdir), wdir, HIST_WHEREIS) == 0) return 0;
+        if (strlen(wdir)==0) return 0;
+        if (MView->Win->GetStr("StartDiR", sizeof(Command), Command, HIST_GREPPATH) == 0) return 0;
+        if (strlen(Command)==0) return 0;
+        SlashDir(Command);
+        Msg(S_INFO,"WhereIs in progress ......");
+    }
+      sprintf(DoCmd,"dir %s\\%s /s /B >c:\\fte.dir",Command,wdir);
+    return Whereis(DoCmd);
+}
+
+
+int EView::RunCompiler(ExState &State) {
+    char Command[256] = "";
+
+    if (CompilerMsgs != 0 && CompilerMsgs->Running) {
+        Msg(S_INFO, "Already running...");
+        return 0;
+    }
+
+    if (State.GetStrParam(this, Command, sizeof(Command)) == 0) {
+        if (Model->GetContext() == CONTEXT_FILE) {
+            EBuffer *B = (EBuffer *)Model;
+            if (BFS(B, BFS_CompileCommand) != 0) 
+                strcpy(Command, BFS(B, BFS_CompileCommand));
+        }
+        if (Command[0] == 0)
+            strcpy(Command, CompileCommand);
+    }
+    return Compile(Command);
 }
 
 int EView::Compile(char *Command) {
@@ -850,10 +914,22 @@ int EView::Compile(char *Command) {
 }
 
 int EView::Grep(char *Command) {
-    system(Command);
+//    char *D;
+//    D = getenv("TAGFILE");
+//    if (D != NULL) SetCurrentDirectory(D);
+//    system(Command);
+    gui->RunProgram(RUN_WAIT,Command);
     Msg(S_INFO,"-= Grep Done =-");
     return 1;
 }
+
+int EView::Whereis(char *Command) {
+//    char Dir[MAXPATH] = "";
+    system(Command);
+    Msg(S_INFO,"-= WhereIs Done =-");
+    return 1;
+}
+
 
 int EView::ViewMessages(ExState &/*State*/) {
     if (CompilerMsgs != 0) {
@@ -881,7 +957,6 @@ int EView::ShowVersion() {
     return 1;
 }
 
-#ifdef CONFIG_VIEWMODEMAP
 int EView::ViewModeMap(ExState &/*State*/) {
     if (TheEventMapView != 0)
         TheEventMapView->ViewMap(GetEventMap());
@@ -893,9 +968,7 @@ int EView::ViewModeMap(ExState &/*State*/) {
         return 0;
     return 1;
 }
-#endif
 
-#ifdef CONFIG_OBJ_MESSAGES
 int EView::ClearMessages() {
     if (CompilerMsgs != 0 && CompilerMsgs->Running) {
         Msg(S_INFO, "Running...");
@@ -907,43 +980,41 @@ int EView::ClearMessages() {
     }
     return 1;
 }
-#endif
 
 #ifdef CONFIG_TAGS
 int EView::TagLoad(ExState &State) {
     char Tag[MAXPATH];
     char FullTag[MAXPATH];
+    int  pTAG=1;
 
     char const* pTagFile = getenv("TAGFILE");
     if (pTagFile == NULL)
     {
         pTagFile = "tags";
+        pTAG = 0;
+    } else {
+        ParseSearchOptions(0, "i", LSearch.Options);
     }
     if (ExpandPath(pTagFile, Tag, sizeof(Tag)) == -1)
         return 0;
+    if (pTAG) strcat(Tag,"\\tags");
 
-//    if (!BFI(VBuffer, BFI_AutoTag)) {
-        if (State.GetStrParam(this, Tag, sizeof(Tag)) == 0)
-            if (MView->Win->GetFile("Load tags", sizeof(Tag), Tag, HIST_TAGFILES, GF_OPEN) == 0) return 0;
-//    }
-
+//    if (State.GetStrParam(this, Tag, sizeof(Tag)) == 0)
+//        if (MView->Win->GetFile("Load tags", sizeof(Tag), Tag, HIST_TAGFILES, GF_OPEN) == 0) return 0;
+//
+    Msg(S_INFO, "Tag [%s] in progress ...........",pTagFile);
     if (ExpandPath(Tag, FullTag, sizeof(FullTag)) == -1)
         return 0;
-
-    Msg(S_INFO,"Tags via [%s] in progress .........",FullTag);  // register_framebuffer
 
     if (!FileExists(FullTag)) {
         Msg(S_INFO, "Tag file '%s' not found.", FullTag);
         return 0;
     }
 
-    Msg(S_INFO,"Load Complete.. < Tag via TagFind() >");
-
     return ::TagLoad(FullTag);
 }
 #endif
 
-#ifdef CONFIG_OBJ_MESSAGES
 int EView::ConfigRecompile(ExState &/*State*/) {
     if (ConfigSourcePath == 0 || ConfigFileName[0] == 0) {
         Msg(S_ERROR, "Cannot recompile (must use external configuration).");
@@ -965,10 +1036,6 @@ int EView::ConfigRecompile(ExState &/*State*/) {
 #endif
     return Compile(command);
 }
-
-#endif
-
-#ifdef CONFIG_BOOKMARKS
 
 int EView::RemoveGlobalBookmark(ExState &State) {
     char name[256] = "";
@@ -1000,7 +1067,6 @@ int EView::PopGlobalBookmark() {
     }
     return 1;
 }
-#endif
 
 int EView::GetStrVar(int var, char *str, int buflen) {
     //switch (var) {
@@ -1178,7 +1244,6 @@ int EView::CvsDiff(char *Options) {
     return 1;
 }
 
-
 int EView::ViewCvsDiff(ExState &/*State*/) {
     if (CvsDiffView != 0) {
         SwitchToModel(CvsDiffView);
@@ -1260,8 +1325,5 @@ int EView::ViewCvsLog(ExState &/*State*/) {
     }
     return 0;
 }
-
-
-// test linux kernel function call register_framebuffer()
 
 #endif

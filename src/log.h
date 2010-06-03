@@ -97,7 +97,7 @@ ENDFUNCAS_SAFE(HANDLE, unsigned long, GetNextHandle());
 using namespace std;
 #endif
 
-#ifdef CONFIG_LOGGING
+#ifndef FTE_NO_LOGGING
 
 /**
  * GlobalLog handles the actual logging.
@@ -283,22 +283,8 @@ void Log__BinaryData(FunctionLog&, void* bin_data, size_t len, unsigned long lin
 
 #else // defined NO_LOGGING
 
-class nullstream
-{
-	public:
-	nullstream& operator<<(const char *) { return *this; }
-	nullstream& operator<<(char *) { return *this; }
-	nullstream& operator<<(int) { return *this; }
-//	nullstream& operator<<(nullstream&) { return *this; }
-//	nullstream& endl(){ return *this; }
-};
-
-//typedef nullstream GlobalLog;
-#define GlobalLog nullstream
-extern GlobalLog globalLog;
-
-#define LOG if(0) globalLog
-#define ENDLINE 0
+#define LOG while (0) { cout
+#define ENDLINE endl; }
 
 #define STARTFUNC(func) 
 #define ENDFUNCRC(rc) return rc

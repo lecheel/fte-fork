@@ -65,6 +65,7 @@ public:
     void GetErrors();
     int Compile(char *Command);
     int Grep(char *Command);
+    int Whereis(char *Command);
     void ShowError(EView *V, int err);
     void DrawLine(PCell B, int Line, int Col, ChColor color, int Width);
     char* FormatLine(int Line);

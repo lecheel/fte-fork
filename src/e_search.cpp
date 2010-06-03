@@ -715,45 +715,103 @@ error:
     return 0;
 }
 
-int EBuffer::CompleteGrep() {  // it should only work via Semware GREP 2.0+ format
-    char cmdStr[512]="";
+char *find_extension(char *s)
+{
+   char *p;
+
+   p=s+strlen(s);
+
+   do {
+      p--;
+      if (*p=='.') {
+	 return p+1;
+      }
+   } while ((p>s)&&(*p!='\\')&&(*p!='/'));
+
+   return s+strlen(s);
+}
+
+
+int EBuffer::CompleteGrep() {  // it should only work via Semware GREP 2.0
+    char cmdStr[512];
+    char *pp,*qq;
     PELine L = VLine(CP.Row);
-    int CurrLine;
+    int MaxCnt,cnt,CurrLine,line;
     int GotInfo=0;
-    int ii;
+    GrepName[0]=0;
     GrepLine=0;
-#ifdef UNIX
-    bzero(GrepName,MAXPATH);
-#else
-    memset(GrepName,0,MAXPATH);
-#endif
     strcpy(cmdStr,FileName);
     GetStrVar(mvFileExtension,cmdStr,1);
     Msg(S_INFO,"GRP Founded");
-    if (!stricmp(cmdStr,".grp")) {
-        CurrLine = VToR(CP.Row);
-        for (;;) {
-            if (CurrLine<0) break;
-            L = RLine(CurrLine);               // Real line Pointer
-            strncpy(cmdStr,L->Chars,L->Count);
-            ii = atoi(cmdStr);
-            if ((ii>0)&&(!GotInfo)) {
-                GrepLine=ii;
-                GotInfo=1;
-            }
-            if (ii==0) {
-                if (!strncmp(cmdStr,"File:",5)) {
-                    strncpy(GrepName,cmdStr+6,L->Count-6);
-                    GotInfo=1;
-                    break;
-                }
-            }
-            CurrLine--;
+    if (!stricmp(cmdStr,".GRP")) {
+        if (strlen(L->Chars)>=512)
+          strncpy(cmdStr,L->Chars,512);
+        else
+          strcpy(cmdStr,L->Chars);
+        pp=strstr(cmdStr,": ");
+        if (pp==NULL) {
+          pp=strstr(cmdStr,":\t");
         }
-    }
-    Msg(S_INFO,"%d %s<<",GrepLine,GrepName);
+        if (pp!=NULL) {    // Line Number found in GREP
+             cnt = 0;
+             while (cmdStr[cnt]!=':') cnt++;
+             cmdStr[cnt]=0;
+             GrepLine = atoi(cmdStr);
+             CurrLine = VToR(CP.Row) + 1;     // Current Line number
+    	     for (line = CurrLine-1; line>=0; line--) {
+               L = RLine(line);
+               if (strlen(L->Chars)>=512)
+                 strncpy(cmdStr,L->Chars,512);
+               else
+                 strcpy(cmdStr,L->Chars);
+               cmdStr[5]=0;
+               if (!strcmp(cmdStr,"File:")) {
+                  if (strlen(L->Chars)>=512)
+                    strncpy(cmdStr,L->Chars,512);
+                  else
+                    strcpy(cmdStr,L->Chars);
+                  cnt=0;
+                  MaxCnt=strlen(cmdStr);
+                  while (cmdStr[cnt]!=0x0D||cnt>MaxCnt) cnt++;
+                  cmdStr[cnt]=0;
+                  qq = cmdStr;
+                  strcpy(cmdStr,qq+6);
+                  GotInfo = 1;
+                  strcpy(GrepName,cmdStr);
+                  break;
+               }
+             }
+        }
+    } else {
+       if (!stricmp(cmdStr,".DIR")) {
+         CurrLine = VToR(CP.Row);     // Current Line number
+         L=RLine(CurrLine);
+        if (L->Chars != NULL) {
+         if (strlen(L->Chars)>=512)
+             strncpy(cmdStr,L->Chars,512);
+         else
+             strcpy(cmdStr,L->Chars);
+
+         cnt=0;
+         MaxCnt=strlen(cmdStr);
+         if (MaxCnt>3) {
+            while (cmdStr[cnt]!=0x0D||cnt>=MaxCnt) cnt++;
+            cmdStr[cnt]=0;
+            GotInfo=1;
+           } else {
+             cmdStr[0]=0;	// ERROR
+           }
+         }
+         strcpy(GrepName,cmdStr);
+//       Msg(S_INFO,GrepName);
+
+       } else {
+       Msg(S_INFO," ... only effect in Grep Index File ...");
+       }
+           }
     return (GotInfo);
 }
+
 
 int EBuffer::CompleteWord() {
 #ifdef CONFIG_I_COMPLETE
@@ -924,11 +982,110 @@ int EBuffer::ScanForRoutines() {
             rlst.Lines = (int *) realloc((void *) rlst.Lines, sizeof(int) * (rlst.Count | 0x1F));
             rlst.Lines[rlst.Count - 1] = line;
             Msg(S_BUSY, "Routines: %d", rlst.Count);
+
         }
     }
     RxFree(regx);
     return 1;
 }
+
+int EBuffer::ScanForASM() {
+    int line;
+    PELine L;
+
+    if (rlst.Lines) {
+        free(rlst.Lines);
+        rlst.Lines = 0;
+    }
+    rlst.Lines = 0;
+    rlst.Count = 0;
+
+    for (line = 0; line < RCount; line++) {
+        L = RLine(line);
+
+        if (RxASM(L->Chars, L->Count) >0 ) {
+            rlst.Count++;
+            rlst.Lines = (int *) realloc((void *) rlst.Lines, sizeof(int) * (rlst.Count | 0x1F));
+
+            rlst.Lines[rlst.Count - 1] = line;
+            Msg(S_BUSY, "ASM Routines: %d", rlst.Count);
+        }
+    }
+    return 1;
+}
+
+int EBuffer::ScanNormalRoutine() {
+    RxNode *regx;
+    int line,Count=0;
+    PELine L;
+    RxMatchRes res;
+    FILE *out;
+    char textContext[MAXSEARCH+1]="";
+
+    if (BFS(this, BFS_RoutineRegexp) == 0) {
+        View->MView->Win->Choice(GPC_ERROR, "Error", 1, "O&K", "No routine regexp.");
+        return 0;
+    }
+    regx = RxCompile(BFS(this, BFS_RoutineRegexp));
+    if (regx == 0) {
+        View->MView->Win->Choice(GPC_ERROR, "Error", 1, "O&K", "Failed to compile regexp '%s'", BFS(this, BFS_RoutineRegexp));
+        return 0;
+    }
+
+    Msg(S_BUSY, "Matching %s", BFS(this, BFS_RoutineRegexp));
+    if (RCount>1) {
+      if ((out=fopen("c:\\ftefunc.grp","wt"))!=NULL) {
+        fprintf(out,"File: %s\n",FileName);
+        for (line = 0; line < RCount; line++) {
+          L = RLine(line);
+          if (RxExec(regx, L->Chars, L->Count, L->Chars, &res) == 1) {
+              memmove(textContext,L->Chars,L->Count);
+              fprintf(out,"%6d: %s\n",line+1,textContext);
+              Count++;
+              Msg(S_INFO, "Routines: %d", Count);
+
+          }
+        }
+        fclose(out);
+      } else {
+          RxFree(regx);
+          return 0;
+          }
+    }
+    RxFree(regx);
+    if (Count>0) return 1;
+    else return 0;
+}
+
+int EBuffer::ScanForASMSymbol() {
+    int line;
+    PELine L;
+    int Idx,Count=0;
+    char asmContext[MAXSEARCH+1]="";
+    FILE *out;
+    if (RCount>1) {
+      if ((out=fopen("c:\\ftefunc.grp","wt"))!=NULL) {
+      fprintf(out,"File: %s\n",FileName);
+      for (line = 0; line < RCount; line++) {
+          L = RLine(line);
+          Idx=RxASM(L->Chars, L->Count);
+          if ( Idx>0 ) {
+              memmove(asmContext,L->Chars,L->Count);
+              LTrim(asmContext);
+              RTrim(asmContext);
+              if (Idx==1) fprintf(out,"%6d:     %s\n",line+1,asmContext);
+              if (Idx==2) fprintf(out,"%6d: %s\n",line+1,asmContext);
+              Count++;
+              Msg(S_INFO, "%d ASM Routines Founded.", Count);
+            }
+          }
+          fclose(out);
+        }
+    }
+    if (Count>0) return 1;
+    else return 0;
+}
+
 #endif
 
 int EBuffer::ShowPosition() {
@@ -990,10 +1147,7 @@ int EBuffer::ShowPosition() {
 #ifdef CONFIG_UNDOREDO
         "U%d/%d/%d "
 #endif
-#ifdef CONFIG_SYNTAX_HILIT
-        "H%d/"
-#endif
-        "%d/%d",
+        "H%d/%d/%d",
 #ifdef HEAPWALK
         MemUsed, MemFree, BlkUsed, BlkFree, BigUsed, BigFree,
 #endif
@@ -1005,10 +1159,7 @@ int EBuffer::ShowPosition() {
 #ifdef CONFIG_UNDOREDO
         US.UndoPtr, US.Num, NN,
 #endif
-#ifdef CONFIG_SYNTAX_HILIT
-        StartHilit,
-#endif
-        MinRedraw, MaxRedraw);
+        StartHilit, MinRedraw, MaxRedraw);
     return 1;
 }
 
@@ -1088,6 +1239,7 @@ int EBuffer::GotoBookmark(char *Name) {
 #endif
 
 int EBuffer::GetMatchBrace(EPoint &M, int MinLine, int MaxLine, int show) {
+    int StateLen;
     hsState *StateMap = 0;
     int Pos;
     PELine L = VLine(M.Row);
@@ -1114,10 +1266,7 @@ int EBuffer::GetMatchBrace(EPoint &M, int MinLine, int MaxLine, int show) {
         return 0;
     }
     StateMap = 0;
-#ifdef CONFIG_SYNTAX_HILIT
-    int StateLen;
     if (GetMap(M.Row, &StateLen, &StateMap) == 0) return 0;
-#endif
     State = StateMap[Pos];
     StateRow = M.Row;
 
@@ -1128,9 +1277,7 @@ int EBuffer::GetMatchBrace(EPoint &M, int MinLine, int MaxLine, int show) {
                 if (StateRow != M.Row) {
                     free(StateMap);
                     StateMap = 0;
-#ifdef CONFIG_SYNTAX_HILIT
                     GetMap(M.Row, &StateLen, &StateMap);
-#endif
                     if (StateMap == 0) return 0;
                     StateRow = M.Row;
                 }
@@ -1210,7 +1357,6 @@ int EBuffer::SearchWord(int SearchFlags) {
     return FindStr(word, len, Case | SearchFlags | SEARCH_WORD);
 }
 
-#ifdef CONFIG_TAGS
 int EBuffer::FindTagWord(ExState &State) {
     char word[MAXSEARCH + 1];
     PELine L = VLine(CP.Row);
@@ -1227,7 +1373,6 @@ int EBuffer::FindTagWord(ExState &State) {
         return 0;
     }
 
-    Msg(S_INFO,"Tagging ....");
     int j = 2;
     while (j--) {
         int i;
@@ -1246,4 +1391,3 @@ int EBuffer::FindTagWord(ExState &State) {
     }
     return 0;
 }
-#endif

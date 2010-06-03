@@ -6,10 +6,8 @@
 #define PROG_FTE      "fte"
 #define PROG_CFTE     "cfte"
 #define PROGRAM       PROG_FTE
-#define EXTRA_VERSION "-CT"
-#define VERSION       "0.49.13.1" EXTRA_VERSION
+#define EXTRA_VERSION "(lechee)"
+#define VERSION       "0.49.14" EXTRA_VERSION
 #define VERNUM        MAKE_VERSION(0x00, 0x49, 0x0402)
-#define COPYRIGHT     "Copyright (c) 1994-1998 Marko Macek\n" \
-                      "Copyright (c) 2000-2003 Others"
-
+#define COPYRIGHT     "Copyright(c) 1994-1998-2005 Marko Macek & Others"
 #endif

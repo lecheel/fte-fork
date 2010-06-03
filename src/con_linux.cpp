@@ -1190,8 +1190,7 @@ char ConGetDrawChar(int idx) {
         if (getenv("ISOCONSOLE")) {
             tab=GetGUICharacters ("Linux","++++-|+++++>.*-^v :[>");
         } else {
-            tab=GetGUICharacters ("Linux","++++-|+++++>.*-^v :[>");
-//.            tab=GetGUICharacters ("Linux","Ú¿ÀÙÄ³ÂÃ´ÁÅ\x1AúÄ±°\x1B\x1A");
+            tab=GetGUICharacters ("Linux","Ú¿ÀÙÄ³ÂÃ´ÁÅ\x1AúÄ±°\x1B\x1A");
 //            tab=GetGUICharacters ("Linux","\x0D\x0C\x0E\x0B\x12\x19____+>\x1F\x01\x12 ");
         }
     }

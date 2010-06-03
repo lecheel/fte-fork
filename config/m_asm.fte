@@ -152,14 +152,13 @@ colorize ASM {
 }
 
 mode ASM: PLAIN {
-    FileNameRx          = /\.\c{ASM}|{GRP}|{s}|{S}$/;
+    FileNameRx          = /\.\c{ASM}|{INC}|{EQU}|{GRP}$/;
     HilitOn             = 1;
     Colorizer           = 'ASM';
     AutoHilitParen      = 1;
-    RoutineRegexp       = /{^[\w]+[ \t]PROC}|{^[\w]+::}/;        
     
     SaveFolds           = 2;      # save fold info at end of line
-    CommentStart        = ' ;';
-    CommentEnd          = '';
+    CommentStart        = ' comment~';
+    CommentEnd          = ' endcomment~';
     CommentPat          = ';';
 }

@@ -10,10 +10,6 @@
 #include "fte.h"
 #include "c_history.h"
 
-#ifndef CONFIG_FOLDS
-int EBuffer::ExposeRow(int Row) {return 0;}
-#endif
-
 EBuffer *SSBuffer = 0; // scrap buffer (clipboard)
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -29,12 +25,10 @@ EBuffer::EBuffer(int createFlags, EModel **ARoot, const char * /*AName*/)
     FileName = 0;
     LL = 0;
     VV = 0;
-#ifdef CONFIG_FOLDS
     FF = 0;
-    FCount = 0;
-#endif
     RGap = RCount = RAllocated = 0;
     VGap = VCount = VAllocated = 0;
+    FCount = 0;
     Modified = 0;
     BlockMode = bmStream;
     ExtendGrab = 0;
@@ -94,10 +88,8 @@ EBuffer::~EBuffer() {
 #endif
     }
 #endif
-#ifdef CONFIG_BOOKMARKS
     if (FileName && Loaded)
         markIndex.storeForBuffer(this);
-#endif
     
     Clear();
     if (LL)
@@ -171,13 +163,11 @@ int EBuffer::Clear() {
 #ifdef CONFIG_UNDOREDO
     FreeUndo();
 #endif
-#ifdef CONFIG_FOLDS
     if (FCount != 0) {
         free(FF);
         FCount = 0;
         FF = 0;
     }
-#endif
     return 0;
 }
 
@@ -396,7 +386,6 @@ int EBuffer::UpdateMarker(int Type, int Row, int Col, int Rows, int Cols) {
     }
 #endif
     
-#ifdef CONFIG_FOLDS
     for (int f = 0; f < FCount; f++) {
         EPoint M;
         
@@ -405,7 +394,6 @@ int EBuffer::UpdateMarker(int Type, int Row, int Col, int Rows, int Cols) {
         UpdateMark(M, Type, Row, Col, Rows, Cols);
         FF[f].line = M.Row;
     }
-#endif
     
 #ifdef CONFIG_BOOKMARKS
     for (int b = 0; b < BMCount; b++)
@@ -603,11 +591,9 @@ int EBuffer::DelLine(int Row, int DoMark) {
     VLine = RToV(Row);
     assert(VLine != -1);
     
-#ifdef CONFIG_FOLDS
     if (FindFold(Row) != -1) {
         if (FoldDestroy(Row) == 0) return 0;
     }
-#endif
     
     VLine = RToV(Row);
     assert(VLine != -1);
@@ -625,9 +611,7 @@ int EBuffer::DelLine(int Row, int DoMark) {
     //puts("Here");
 
     Draw(Row, -1);
-#ifdef CONFIG_SYNTAX_HILIT
     Hilit(Row);
-#endif
     assert(RAllocated >= RCount);
     if (RGap != Row) 
         if (MoveRGap(Row) == 0) return 0;
@@ -695,9 +679,7 @@ int EBuffer::InsLine(int Row, int DoAppend, int DoMark) {
     if (DoMark)
         UpdateMarker(umInsert, Row, 0, 1, 0);
     Draw(Row, -1);
-#ifdef CONFIG_SYNTAX_HILIT
     Hilit(Row);
-#endif
     VLine = RToVN(Row);
     assert(RCount <= RAllocated);
 //    printf("++ %d G:C:A :: %d - %d - %d\n", Row, RGap, RCount, RAllocated);
@@ -765,9 +747,7 @@ int EBuffer::DelChars(int Row, int Ofs, int ACount) {
     L->Count -= ACount;
     if (L->Allocate(L->Count) == 0) return 0;
     Draw(Row, Row);
-#ifdef CONFIG_SYNTAX_HILIT
     Hilit(Row);
-#endif
 //    printf("OK\n");
     return 1;
 }
@@ -803,9 +783,7 @@ int EBuffer::InsChars(int Row, int Ofs, int ACount, const char *Buffer) {
         memmove(L->Chars + Ofs, Buffer, ACount);
     L->Count += ACount;
     Draw(Row, Row);
-#ifdef CONFIG_SYNTAX_HILIT
     Hilit(Row);
-#endif
     // printf("OK\n");
     return 1;
 }
@@ -857,9 +835,7 @@ int EBuffer::ChgChars(int Row, int Ofs, int ACount, const char * /*Buffer*/) {
         if (PushUChar(ucInsChars) == 0) return 0;
     }
 #endif
-#ifdef CONFIG_SYNTAX_HILIT
     Hilit(Row);
-#endif
     Draw(Row, Row);
     return 1;
 }
@@ -989,9 +965,7 @@ int EBuffer::SplitLine(int Row, int Col) {
     } else {
         UpdateMarker(umSplitLine, Row, Col, 0, 0);
         if (InsLine(Row, 1, 0) == 0) return 0;
-#ifdef CONFIG_SYNTAX_HILIT
         RLine(Row)->StateE = short((Row > 0) ? RLine(Row - 1)->StateE : 0);
-#endif
         if (Col < LineLen(Row)) {
             int P, L;
             //if (RLine(Row)->ExpandTabs(Col, -2, &Flags) == 0) return 0;
@@ -1006,9 +980,7 @@ int EBuffer::SplitLine(int Row, int Col) {
         }
     }
     Draw(Row, -1);
-#ifdef CONFIG_SYNTAX_HILIT
     Hilit(Row);
-#endif
     return 1;
 }
 
@@ -1034,8 +1006,6 @@ int EBuffer::JoinLine(int Row, int Col) {
         UpdateMarker(umJoinLine, Row, Col, 0, 0);
     }
     Draw(Row, -1);
-#ifdef CONFIG_SYNTAX_HILIT
     Hilit(Row);
-#endif
     return 1;
 }

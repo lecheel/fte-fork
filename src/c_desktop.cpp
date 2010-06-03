@@ -129,9 +129,8 @@ int LoadDesktop(char *FileName) {
 #ifdef CONFIG_TAGS
             if (line[0] == 'T' && line[1] == '|') { // tag file
                 TagsAdd(line + 2);
-            } else
 #endif
-            if (line[0] == 'M' && line[1] == '|') { // mark
+            } else if (line[0] == 'M' && line[1] == '|') { // mark
                 char *name;
                 char *file;
                 EPoint P;

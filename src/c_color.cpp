@@ -22,26 +22,16 @@ ChColor hcEntry_Selection = 0x2F;
 
 /* Plain */
 
-#ifdef CONFIG_DOSEDIT
-ChColor hcPlain_Normal = 0x17;
-ChColor hcPlain_Background = 0x17;
-#else
 ChColor hcPlain_Normal = 0x07;
 ChColor hcPlain_Background = 0x07;
-#endif
 ChColor hcPlain_Selected = 0x30;
 ChColor hcPlain_Markers = 0x03;
 ChColor hcPlain_Found = 0x40;
 ChColor hcPlain_Keyword = 0x0F;
-#ifdef CONFIG_FOLDS
 ChColor hcPlain_Folds[5] = { 0x0A, 0x0A, 0x0A, 0x0A, 0x0A };
-#endif
 ChColor hcPlain_HilitWord = 0x0D;
-#ifdef CONFIG_BOOKMARKS
 ChColor hcPlain_Bookmark = 0x20;
-#endif
 
-#ifdef CONFIG_OBJ_LIST
 /* LIST */
 //ChColor hcList_Border       = 0x03;
 ChColor hcList_Status       = 0x70;
@@ -53,7 +43,6 @@ ChColor hcList_Marked       = 0xB0;
 ChColor hcList_MarkSelect   = 0x1B;
 ChColor hcList_MarkHilit    = 0xB1;
 ChColor hcList_MarkHilitSel = 0x1B;
-#endif
 
 ChColor hcScrollBar_Arrows = 0x70;
 ChColor hcScrollBar_Back   = 0x07;
@@ -62,19 +51,10 @@ ChColor hcScrollBar_Fore   = 0x07;
 ChColor hcAsciiChars = 0x07;
 
 ChColor hcMenu_Background = 0x70;
-#ifdef CONFIG_DOSEDIT
-ChColor hcMenu_ActiveItem = 0x07;
-ChColor hcMenu_ActiveChar = 0x0F;
-#else
 ChColor hcMenu_ActiveItem = 0x1F;
 ChColor hcMenu_ActiveChar = 0x1C;
-#endif
 ChColor hcMenu_NormalItem = 0x70;
-#ifdef CONFIG_DOSEDIT
-ChColor hcMenu_NormalChar = 0x7f;
-#else
 ChColor hcMenu_NormalChar = 0x74;
-#endif
 
 ChColor hcChoice_Title      = 0x1F;
 ChColor hcChoice_Param      = 0x1B;
@@ -100,7 +80,6 @@ static const struct {
     { "Entry.Prompt",      &hcEntry_Prompt },
     { "Entry.Selection",   &hcEntry_Selection },
 
-#ifdef CONFIG_OBJ_LIST
     { "LIST.Status",       &hcList_Status },
     { "LIST.Normal",       &hcList_Normal },
     { "LIST.Selected",     &hcList_Selected },
@@ -110,7 +89,6 @@ static const struct {
     { "LIST.MarkSelect",   &hcList_MarkSelect },
     { "LIST.MarkHilit",    &hcList_MarkHilit },
     { "LIST.MarkHilitSel", &hcList_MarkHilitSel },
-#endif
 
     { "PLAIN.Normal",      &hcPlain_Normal },
     { "PLAIN.Background",  &hcPlain_Background },
@@ -118,19 +96,15 @@ static const struct {
     { "PLAIN.Markers",     &hcPlain_Markers },
     { "PLAIN.Found",       &hcPlain_Found },
     { "PLAIN.Keyword",     &hcPlain_Keyword },
-#ifdef CONFIG_FOLDS
     { "PLAIN.Folds",       &hcPlain_Folds[0] }, // added some backwards compatibility
     { "PLAIN.Folds0",      &hcPlain_Folds[0] },
     { "PLAIN.Folds1",      &hcPlain_Folds[1] },
     { "PLAIN.Folds2",      &hcPlain_Folds[2] },
     { "PLAIN.Folds3",      &hcPlain_Folds[3] },
     { "PLAIN.Folds4",      &hcPlain_Folds[4] },
-#endif
     { "PLAIN.HilitWord",   &hcPlain_HilitWord },
-#ifdef CONFIG_BOOKMARKS
     { "PLAIN.Bookmark",    &hcPlain_Bookmark },
 
-#endif
     { "ScrollBar.Arrows",  &hcScrollBar_Arrows },
     { "ScrollBar.Back",    &hcScrollBar_Back },
     { "ScrollBar.Fore",    &hcScrollBar_Fore },

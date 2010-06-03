@@ -9,8 +9,6 @@
 
 #include "fte.h"
 
-#ifdef CONFIG_FOLDS
-
 int EBuffer::FindFold(int Line) { // optimize /*FOLD00*/
     int f = FindNearFold(Line);
     if (f != -1)
@@ -531,4 +529,3 @@ int EBuffer::MoveFoldNext() { /*FOLD00*/
     if (SetPosR(CP.Col, FF[f].line, tmLeft) == 0) return 0;
     return 1;
 }
-#endif

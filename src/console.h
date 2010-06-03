@@ -179,14 +179,12 @@ int ConHideCursor();
 int ConCursorVisible();
 int ConSetCursorSize(int Start, int End);
 
-#ifdef CONFIG_MOUSE
 int ConSetMousePos(int X, int Y);
 int ConQueryMousePos(int *X, int *Y);
 int ConShowMouse();
 int ConHideMouse();
 int ConMouseVisible();
 int ConQueryMouseButtons(int *ButtonCount);
-#endif
 
 int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete);
 int ConPutEvent(TEvent Event);
@@ -200,6 +198,12 @@ void MoveAttr(PCell B, int Pos, int Width, TAttr Attr, int Count);
 void MoveBgAttr(PCell B, int Pos, int Width, TAttr Attr, int Count);
 
 int CStrLen(const char *s);
+void RTrimS(char *str,char spc);
+void LTrim(char *str);
+void RTrim(char *str);
+void GetDate(char *str);
+char *GetTmpDir();
+void clrTAB(char *s);
 
 int NewMenu(const char *Name);
 int NewItem(int menu, const char *Name);

@@ -9,6 +9,20 @@
 
 #include "fte.h"
 
+int EBuffer::NextCommand() {
+    if (Match.Row != -1) {
+        Draw(Match.Row, Match.Row);
+        Match.Col = Match.Row = -1;
+    }
+    if (View)
+        View->SetMsg(0);
+#ifdef CONFIG_UNDOREDO
+    return BeginUndo();
+#else
+    return 1;
+#endif
+}
+
 #ifdef CONFIG_UNDOREDO
 
 int EBuffer::PushBlockData() {
@@ -248,7 +262,6 @@ int EBuffer::Undo(int undo) {
             }
             break;
 
-#ifdef CONFIG_FOLDS
         case ucFoldCreate:
             // puts("ucFoldCreate");
             UGET(rc, No, Pos, Line); if (rc == 0) return 0;
@@ -293,14 +306,12 @@ int EBuffer::Undo(int undo) {
             UGET(rc, No, Pos, Line); if (rc == 0) return 0;
             if (FoldOpen(Line) == 0) return 0;
             break;
-#endif
             
         case ucModified:
 //            printf("\tModified\n");
             Modified = 0;
             break;
 
-#ifdef CONFIG_BOOKMARKS
         case ucPlaceUserBookmark:
             //puts ("ucPlaceUserBookmark");
             UGET(rc, No, Pos, ACount); if (rc == 0) return 0;
@@ -324,7 +335,6 @@ int EBuffer::Undo(int undo) {
             UGET(rc, No, Pos, Line); if (rc == 0) return 0;
             if (PlaceUserBookmark ((const char *)data,EPoint (Line,Col))==0) return 0;
             break;
-#endif
 
         default:
             assert(1 == "Oops: invalid undo command.\n"[0]);

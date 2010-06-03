@@ -9,7 +9,6 @@
 
 #include "fte.h"
 
-#ifdef CONFIG_OBJ_LIST
 EListPort::EListPort(EList *L, EView *V): EViewPort(V) {
     List = L;
     OldTopRow = OldLeftCol = OldRow = OldCount = -1;
@@ -95,18 +94,15 @@ void EListPort::HandleEvent(TEvent &Event) {
             break;
         }
         break;
-#ifdef CONFIG_MOUSE
     case evMouseDown:
     case evMouseUp:
     case evMouseMove:
     case evMouseAuto:
         HandleMouse(Event);
-#endif
         break;
     }
 }
- 
-#ifdef CONFIG_MOUSE
+
 void EListPort::HandleMouse(TEvent &Event) {
     int W, H;
     int x, y, xx, yy;
@@ -181,7 +177,6 @@ void EListPort::HandleMouse(TEvent &Event) {
         break;
     }
 }
-#endif
 
 void EListPort::UpdateView() {
     if (OldLeftCol != LeftCol || OldTopRow != TopRow || OldCount != List->Count)
@@ -507,6 +502,20 @@ int EList::MoveLineEnd() {
     return ErOK;
 }
 
+
+int EList::MoveLineComment(int Cols) {
+    int W, H;
+    
+    View->MView->Win->ConQuerySize(&W, &H);
+    H--;
+    if (LeftCol != H / 2) {
+        LeftCol = H / 2;
+        NeedsUpdate = 1;
+    }
+    return ErOK;
+}
+
+
 int EList::MovePageUp() {
     int W, H;
     
@@ -714,4 +723,3 @@ int EList::ToggleMarkAll() {
     }
     return ErOK;
 }
-#endif

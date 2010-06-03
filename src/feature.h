@@ -12,21 +12,12 @@
 #ifndef __FEATURE_H__
 #define __FEATURE_H__
 
-#ifndef CONFIG_MINIMAL
-
 #undef CONFIG_EMULATE_VI // todo
 
-#define CONFIG_TRANS
-#define CONFIG_EXTERNAL_CONFIG
-#define CONFIG_VIEWLIST
-#define CONFIG_VIEWMODEMAP
-#define CONFIG_BACKUP
-#define CONFIG_EXTERNAL_COMMAND
-#define CONFIG_HELP
+#define CONFIG_CONFIGURABLE
 #define CONFIG_MOUSE
 #define CONFIG_CLIPBOARD
 #define CONFIG_SHELL
-#define CONFIG_LOGGING
 
 #define CONFIG_MFRAMES
 #define CONFIG_MWINDOWS
@@ -47,7 +38,6 @@
 #define CONFIG_WORDWRAP
 #define CONFIG_ABBREV
 #define CONFIG_TAGS
-#define VIEWBUFFERS
 
 #define CONFIG_UNDOREDO
 #define CONFIG_REGEXPS
@@ -63,7 +53,6 @@
 #define CONFIG_OBJ_ROUTINE
 #define CONFIG_OBJ_BUFFERS
 #define CONFIG_OBJ_MESSAGES
-#define CONFIG_OBJ_MODEMAP
 #define CONFIG_OBJ_CVS
 #endif
 
@@ -85,9 +74,6 @@
 #define CONFIG_HILIT_CATBS
 #define CONFIG_HILIT_SIMPLE
 #endif
-#define CONFIG_INDENT
-
-#ifdef CONFIG_INDENT
 
 #if defined(CONFIG_HILIT_C)
 #define CONFIG_INDENT_C
@@ -101,10 +87,5 @@
 #define CONFIG_INDENT_REXX
 #endif
 
-#endif
-
 #define CONFIG_I_COMPLETE
-
-#endif
-
 #endif

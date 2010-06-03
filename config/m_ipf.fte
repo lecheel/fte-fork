@@ -78,5 +78,4 @@ mode IPF: PLAIN {                       # .IPF files
     SaveFolds           = 1;      # save fold info at beginning of line
     CommentStart        = '.*';
     CommentEnd          = '';
-    CommentPat          = '.*';
 }

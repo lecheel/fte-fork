@@ -29,16 +29,6 @@ int EBuffer::Save() {
     }
     if (BFI(this, BFI_TrimOnSave))
         FileTrim();
-
-    if(FileName == NULL || FileName[0] == '\0') {
-        char Name[MAXPATH];
-        int r;
-        Name[0] = '\0';
-	r = View->MView->Win->GetFile("Save As", sizeof(Name), Name, HIST_PATH, GF_SAVEAS);
-	if(FileName) free(FileName);
-        FileName = strdup(Name);
-        if(!r) return r;
-    }
     return SaveTo(FileName);
 }
 
@@ -346,9 +336,7 @@ int EBuffer::LoadFrom(char *AFileName) {
                             if (i) {
                                 memcpy(buf, LL[l]->Chars + pos, i); buf[i] = 0;
                                 pos += i;
-#ifdef CONFIG_BOOKMARKS
                                 if (PlaceUserBookmark(buf, EPoint(l, col)) == 0) goto fail;
-#endif
                             }
                             if (LL[l]->Chars[pos] == 'x') {
                                 // Read total length (just test for correctness)
@@ -372,7 +360,6 @@ int EBuffer::LoadFrom(char *AFileName) {
                     if (where == 2 && LL[l]->Count != pos + len_end) continue;
                     pos += len_end;
 
-#ifdef CONFIG_FOLDS
                     // Create fold if whole comment was successfully parsed
                     if (open != -1) {
                         int f;
@@ -384,7 +371,6 @@ int EBuffer::LoadFrom(char *AFileName) {
                         if (open == 0)
                             if (FoldClose(l) == 0) goto fail;
                     }
-#endif
                     // Now remove parsed comment from line
                     memmove(LL[l]->Chars + startpos,
                             LL[l]->Chars + pos,
@@ -435,11 +421,13 @@ int EBuffer::SaveTo(char *AFileName) {
     PELine L;
     unsigned long ByteCount = 0, OldCount = 0;
 
+    int f;
+    char fold[64];
+    unsigned int foldlen = 0;
+
     int bindex;
     unsigned int blen = 0;
-#ifdef CONFIG_BOOKMARKS
     char *bname, book[1024] = "BOOK";
-#endif
     EPoint bpos;
 
     unsigned int len_start = 0, len_end = 0;
@@ -466,7 +454,6 @@ int EBuffer::SaveTo(char *AFileName) {
 
     if (RCount <= 0) return 0;
 
-#ifdef CONFIG_BACKUP
     // make only backups when user have requested a one
     if (BFI(this, BFI_MakeBackups) != 0) {
         Msg(S_INFO, "Backing up %s...", AFileName);
@@ -475,7 +462,6 @@ int EBuffer::SaveTo(char *AFileName) {
             return 0;
         }
     }
-#endif
 
     Msg(S_INFO, "Writing %s...", AFileName);
 
@@ -501,11 +487,7 @@ int EBuffer::SaveTo(char *AFileName) {
     if (BFS(this, BFS_CommentEnd)) len_end = strlen(BFS(this, BFS_CommentEnd));
 
     for (l = 0; l < RCount; l++) {
-#ifdef CONFIG_FOLDS
-        int f;
-        char fold[64];
-        unsigned int foldlen = 0;
-
+        L = RLine(l);
         f = FindFold(l);
 
         foldlen = 0;
@@ -515,8 +497,6 @@ int EBuffer::SaveTo(char *AFileName) {
                               FF[f].open ? "FOLD%02d" : "fold%02d",
                               FF[f].level);
         }
-#endif
-        L = RLine(l);
 
         bindex = 0; blen = 0;
 #ifdef CONFIG_BOOKMARKS
@@ -535,10 +515,7 @@ int EBuffer::SaveTo(char *AFileName) {
 
         // what - write at 1 = beginning / 2 = end of line
         for (int what = 1; what < 3; what++) {
-            if (
-#ifdef CONFIG_FOLDS
-(BFI(this, BFI_SaveFolds) == what && foldlen) ||
-#endif
+            if ((BFI(this, BFI_SaveFolds) == what && foldlen) ||
                 (BFI(this, BFI_SaveBookmarks) == what && blen)
                ) {
 
@@ -546,12 +523,10 @@ int EBuffer::SaveTo(char *AFileName) {
                     if (fwrite(BFS(this, BFS_CommentStart), 1, len_start, fp) != len_start) goto fail;
                     ByteCount += len_start;
                 }
-#ifdef CONFIG_FOLDS
                 if (BFI(this, BFI_SaveFolds) == what && foldlen) {
                     if (fwrite(fold, 1, foldlen, fp) != foldlen) goto fail;
                     ByteCount += foldlen;
                 }
-#endif
 #ifdef CONFIG_BOOKMARKS
                 if (BFI(this, BFI_SaveBookmarks) == what && blen) {
                     if (fwrite(book, 1, blen, fp) != blen) goto fail;

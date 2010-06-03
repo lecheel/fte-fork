@@ -9,23 +9,6 @@
 
 #include "fte.h"
 
-#ifdef CONFIG_INDENT
-static const struct {
-    const char *Name;
-    int Num;
-} IndentModes[] = {
-#ifdef CONFIG_INDENT_C
-{ "C", INDENT_C },
-#endif
-#ifdef CONFIG_INDENT_REXX
-{ "REXX", INDENT_REXX },
-#endif
-#ifdef CONFIG_INDENT_SIMPLE
-{ "SIMPLE", INDENT_REXX },
-#endif
-{ "PLAIN", INDENT_PLAIN },
-};
-#endif
 #ifdef CONFIG_SYNTAX_HILIT
 static const struct {
     const char *Name;
@@ -74,7 +57,30 @@ static const struct {
 #endif
 };
 
+static const struct {
+    const char *Name;
+    int Num;
+} IndentModes[] = {
+#ifdef CONFIG_INDENT_C
+{ "C", INDENT_C },
+#endif
+#ifdef CONFIG_INDENT_REXX
+{ "REXX", INDENT_REXX },
+#endif
+#ifdef CONFIG_INDENT_SIMPLE
+{ "SIMPLE", INDENT_REXX },
+#endif
+{ "PLAIN", INDENT_PLAIN },
+};
+
 EColorize *Colorizers = 0;
+
+int GetIndentMode(const char *Str) {
+    for (unsigned int i = 0; i < sizeof(IndentModes) / sizeof(IndentModes[0]); i++)
+        if (strcmp(Str, IndentModes[i].Name) == 0)
+            return IndentModes[i].Num;
+    return 0;
+}
 
 int GetHilitMode(const char *Str) {
     for (unsigned int i = 0; i < sizeof(HilitModes) / sizeof(HilitModes[0]); i++)
@@ -146,9 +152,6 @@ int EBuffer::HilitWord() {
     return (HilitFindWord(s)) ? HilitRemoveWord(s) : HilitAddWord(s);
 }
 #endif
-
-
-
 
 /* ======================================================================= */
 
@@ -311,12 +314,4 @@ void HMachine::AddTrans(HTrans &aTrans) {
     transCount++;
 }
 
-#endif
-#ifdef CONFIG_INDENT
-int GetIndentMode(const char *Str) {
-    for (unsigned int i = 0; i < sizeof(IndentModes) / sizeof(IndentModes[0]); i++)
-        if (strcmp(Str, IndentModes[i].Name) == 0)
-            return IndentModes[i].Num;
-    return 0;
-}
 #endif

@@ -70,6 +70,9 @@ int SaveHistory(char *FileName) { /*FOLD00*/
             fprintf(fp, "I|%d|%s\n", inputHistory.Id[i], inputHistory.Line[i]);
         }
     }
+
+    fprintf(fp, "G|VDIR|%s\n",VDIR);
+    fprintf(fp, "G|VMASK|%s\n",VMASK);
     fclose(fp);
     return 1;
 }
@@ -77,7 +80,8 @@ int SaveHistory(char *FileName) { /*FOLD00*/
 int LoadHistory(char *FileName) { /*FOLD00*/
     FILE *fp;
     char line[2048];
-    char *p, *e;
+    char chk[256];
+    char *p, *e, *q;
     FPosHistory *last=NULL;
     HBookmark **nb;
     
@@ -182,6 +186,16 @@ int LoadHistory(char *FileName) { /*FOLD00*/
                 break;
             *e = 0;
             AddInputHistory(i, p);
+        } else if (line[0] == 'G' && line[1] == '|') { // Global Variable
+            p = line + 2;
+            q = strstr(line + 2, "|");
+            if (q != NULL) {
+                strcpy(chk,line);
+                e = strchr(q, '\n');
+                *e = 0;
+                if (!strncmp(chk,"G|VDIR|",7)) strcpy(VDIR,q+1);
+                if (!strncmp(chk,"G|VMASK|",8)) strcpy(VMASK,q+1);
+            }
         }
     }
     fclose(fp);
@@ -431,8 +445,10 @@ int StoreBookmarks(EBuffer *buffer) { /*fold00*/
         }
     }
     // Should not get here
-#endif
     return 0;
+#else
+    return 0
+#endif
 }
 
 #endif

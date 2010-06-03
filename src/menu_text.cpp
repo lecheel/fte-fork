@@ -7,8 +7,6 @@
  *
  */
 
-#include "feature.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -191,9 +189,7 @@ int ExecVertMenu(int x, int y, int id, TEvent &E, UpMenu *up) {
     PCell c;
     PCell SaveC = 0;
     int SaveX, SaveY, SaveW, SaveH;
-#ifdef CONFIG_MOUSE
     int wasmouse = 0;
-#endif
     UpMenu here;
     int dovert = 0;
     int rx;
@@ -248,7 +244,6 @@ int ExecVertMenu(int x, int y, int id, TEvent &E, UpMenu *up) {
     SaveW = w;
     SaveH = h;
     
-#ifdef CONFIG_MOUSE
     if (E.What == evMouseMove || E.What == evMouseDown) {
     }
     if (E.What & evMouse) {
@@ -257,7 +252,6 @@ int ExecVertMenu(int x, int y, int id, TEvent &E, UpMenu *up) {
         wasmouse = 1;
         E.What = evNone;
     }
-#endif
     abort = -2;
     while (abort == -2) {
         DrawVMenu(x, y, id, cur);
@@ -333,7 +327,7 @@ int ExecVertMenu(int x, int y, int id, TEvent &E, UpMenu *up) {
             case kbLeft:
             case kbRight:
                 gui->ConPutEvent(E);
-                abort = 0;
+                abort = -1;
                 break;
             default:
                 if (isAscii(E.Key.Code)) {
@@ -365,7 +359,6 @@ int ExecVertMenu(int x, int y, int id, TEvent &E, UpMenu *up) {
                 }
             }
             break;
-#ifdef CONFIG_MOUSE
         case evMouseDown:
             if (E.Mouse.X >= x && E.Mouse.Y >= y &&
                 E.Mouse.X < x + w && E.Mouse.Y < y + h) 
@@ -374,7 +367,7 @@ int ExecVertMenu(int x, int y, int id, TEvent &E, UpMenu *up) {
             } else {
                 if (up) 
                     gui->ConPutEvent(E);
-                abort = 0;
+                abort = -1;
             }
             wasmouse = 1;
             dovert = 1;
@@ -408,7 +401,7 @@ int ExecVertMenu(int x, int y, int id, TEvent &E, UpMenu *up) {
                                     first = 0;
                                 }
                                 gui->ConPutEvent(E);
-                                abort = 0;
+                                abort = -1;
                                 break;
                             }
                             first = 0;
@@ -442,10 +435,10 @@ int ExecVertMenu(int x, int y, int id, TEvent &E, UpMenu *up) {
                             if (i != -1)
                                 if (Menus[p->id].Items[i].SubMenu == id) break;
                         }
-                        abort = 0;
+                        abort = -1;
                     }
                 } else
-                    abort = 0;
+                    abort = -1;
                 if (E.Mouse.X >= x && E.Mouse.Y >= y &&
                     E.Mouse.X < x + w && E.Mouse.Y < y + h);
                 else {
@@ -464,7 +457,6 @@ int ExecVertMenu(int x, int y, int id, TEvent &E, UpMenu *up) {
                 }
             }
             break;
-#endif
         }
     }
     if (SaveC) {
@@ -473,15 +465,15 @@ int ExecVertMenu(int x, int y, int id, TEvent &E, UpMenu *up) {
         SaveC = 0;
     }
     ConShowCursor();
-    if (abort == -3 && !up) abort = -1;
-    return abort;
+    if (up && abort == -3) return -3;
+    return (abort == 1) ? 1 : -1;
 }
 
 int ExecMainMenu(TEvent &E, char sub) {
     int cur = 0;
     int id = GetMenuId(frames->Menu);
     int abort;
-    int dovert = 0;
+    int dovert = 1;
     int rx;
     static UpMenu top = { 0, 0, 0, 0, 0, 0, 1 };
     PCell topline[ConMaxCols];
@@ -499,7 +491,6 @@ int ExecMainMenu(TEvent &E, char sub) {
     ConGetBox(0, 0, Cols, 1, (PCell) topline);
     
     if (sub != 0) {
-	    dovert = 1;
         int i;
         
         for (i = 0; i < Menus[id].Count; i++) {
@@ -514,12 +505,10 @@ int ExecMainMenu(TEvent &E, char sub) {
         }
     }
 
-#ifdef CONFIG_MOUSE
     if (E.What == evMouseDown) {
         cur = GetHPosItem(id, E.Mouse.X);
         dovert = 1;
     }
-#endif
     abort = -2;
     while (abort == -2) {
         DrawHMenu(0, 0, id, cur);
@@ -534,8 +523,6 @@ int ExecMainMenu(TEvent &E, char sub) {
                     } else if (rx == -3) {
                         abort = -1;
                         break;
-		    } else if (rx == -1) {
-			    dovert = 0;
                     } else
                         abort = -2;
                 }
@@ -547,6 +534,7 @@ int ExecMainMenu(TEvent &E, char sub) {
             if (E.What & evNotify)
                 gui->DispatchEvent(frames, frames->Active, E);
         } while (E.What & evNotify);
+        dovert = 0;
         switch (E.What) {
         case evCommand:
             if (E.Msg.Command == cmResize) abort = -1;
@@ -555,6 +543,7 @@ int ExecMainMenu(TEvent &E, char sub) {
             switch (kbCode(E.Key.Code)) {
             case kbEnd: cur = Menus[id].Count;
             case kbLeft:
+                dovert = 1;
                 {
                     int x = cur;
                     do {
@@ -565,6 +554,7 @@ int ExecMainMenu(TEvent &E, char sub) {
                 break;
             case kbHome: cur = -1;
             case kbRight:
+                dovert = 1;
                 {
                     int x = cur;
                     do {
@@ -617,7 +607,6 @@ int ExecMainMenu(TEvent &E, char sub) {
                 break;
             }
             break;
-#ifdef CONFIG_MOUSE
         case evMouseDown:
             if (E.Mouse.Y == 0) {
                 int oldcur = cur;
@@ -656,7 +645,6 @@ int ExecMainMenu(TEvent &E, char sub) {
                 }
             }
             break;
-#endif
         }
     }
     DrawHMenu(0, 0, id, -1);

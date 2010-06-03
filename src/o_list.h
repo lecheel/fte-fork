@@ -24,9 +24,7 @@ public:
     void GetPos();
     
     virtual void HandleEvent(TEvent &Event);
-#ifdef CONFIG_MOUSE
     virtual void HandleMouse(TEvent &Event);
-#endif
 
     void PaintView(int PaintAll);
     
@@ -83,6 +81,7 @@ public:
     int MoveDown();
     int MoveLineStart();
     int MoveLineEnd();
+    int MoveLineComment(int Cols);
     int MovePageUp();
     int MovePageDown();
     int ScrollLeft(int Cols);

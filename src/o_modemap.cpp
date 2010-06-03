@@ -8,7 +8,6 @@
  */
 
 #include "fte.h"
-#ifdef CONFIG_OBJ_MODEMAP
 #include "o_modemap.h"
 
 EventMapView *TheEventMapView = 0;
@@ -180,5 +179,4 @@ void EventMapView::GetTitle(char *ATitle, int /*MaxLen*/, char *ASTitle, int SMa
     strncpy(ASTitle, "EventMapView", SMaxLen);
     ASTitle[SMaxLen - 1] = 0;
 }
-#endif
 

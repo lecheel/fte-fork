@@ -7,14 +7,13 @@
  *
  */
 
-
-#include "fte.h"
-
-#ifdef CONFIG_HELP
-
 #ifdef WINNT
 #include "e_win32.cpp"
 #else
+
+// UNIX specific routines
+
+#include "fte.h"
 
 #include <sys/wait.h>
 #include <signal.h>
@@ -84,7 +83,5 @@ int EView::SysShowHelp(ExState &State, const char *word) {
     }
     return 1;
 }
-
-#endif
 
 #endif

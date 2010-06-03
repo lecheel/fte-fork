@@ -8,6 +8,10 @@
  */
 
 #include "console.h"
+#include "string.h"
+#include "stdlib.h"
+#include "stdio.h"
+#include "time.h"
 
 #ifdef  NTCONSOLE
 #   define  WIN32_LEAN_AND_MEAN 1
@@ -27,6 +31,79 @@ int CStrLen(const char *p) {
     }
     return len;
 }
+
+void RTrim(char *str)
+{
+    int c=0;
+    int len=strlen(str);
+//    c = len-1;
+    if (!str[0]==0)
+    {
+//      while ((c<len)&&((str[c]!=0x0d)||(str[c]!=0x0a)))
+      while ((c<len)&&((str[c]!=0x0d)&&(str[c]!=0x0a)))
+        c++;
+    }
+    str[c]=0;
+
+}
+
+char *GetTmpDir(void)
+{
+	static char *p;
+
+	p = getenv("TMP");
+	if( !p ) p = getenv("TEMP");
+	return p;
+}
+
+void clrTAB(char *s)
+{
+      int count = strlen(s);
+      for (int i=0; i<count; i++) {
+         /* convert tabs */
+         if (s[i] == '\t') {
+             s[i]=0x20;
+         }
+      }
+}
+
+void LTrim(char *str)
+{
+    int c=0,i;
+    int len=strlen(str);
+    if (!str[0]==0)
+    {
+      while ((c < len) && ((str[c] == ' ') || (str[c] == '\t')))
+        c++;
+    }
+    for (i=0;i<len-c;i++)
+      str[i]=str[c+i];
+    str[i] = 0;
+}
+
+void RTrimS(char *str,char spc)
+{
+    int len=strlen(str);
+    if (!str[0]==0)
+    {
+      while ((len>0)&&((str[len]!=spc)))
+        len--;
+    }
+    str[len+1]=0;
+
+}
+
+void GetDate(char *s)
+{
+    time_t epoch;
+    struct tm *t;
+    if ((epoch = time( NULL)) != -1) {
+        if ((t = localtime( &epoch )) != NULL) {
+           sprintf(s,"%04d%02d%02d",t->tm_year + 1900,t->tm_mon+1,t->tm_mday);
+        }
+    } else *s = '\0';
+}
+
 
 #ifndef NTCONSOLE
 

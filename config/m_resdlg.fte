@@ -28,5 +28,4 @@ mode RESOURCE: PLAIN {           # Resource file
     SaveFolds           = 2;      # save fold info at end of line
     CommentStart        = ' /*';
     CommentEnd          = '*/';
-    CommentPat          = ' ';
 }

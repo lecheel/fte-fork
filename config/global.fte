@@ -26,6 +26,7 @@ object GLOBAL {
 
     IgnoreBufferList    = 0;   # skip buffer list in FileNext/Prev/Last
     ReassignModelIds    = 0;   # assign first empty number for newly created buffer
+    BiosHome            = 1;   # trim up level for bios develop 
 
     RecheckReadOnly     = 0;   # recheck read only status when trying to modify file (only performed on when read only is set)
 

@@ -53,5 +53,6 @@ mode PLAIN {
     Undo                = 1;         # undo/redo enabled
     UndoLimit           = 1023;      # num of changes to save
     UndoMoves           = 0;         # undo cursor movement commands
+    WordChars           = '-A-Za-z0-9_@';
     WordWrap            = 0;         # word wrap (off = 0, line = 1, paragraph=2)
 }

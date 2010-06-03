@@ -1,0 +1,38 @@
+@ Echo off
+  if "%1" == "" goto usage
+  if "%1" == "ms" goto MSVC
+  if "%1" == "bc" goto BCC32
+  if "%1" == "mi" goto MING
+  if "%1" == "rel" goto Rel
+  if "%1" == "clean" goto Clean
+  if "%1" == "cc" goto Clean
+  goto end
+:MSVC
+  nmake win32ms
+  goto end
+:MING
+  make win32mingw
+  goto end
+:BCC32
+  make win32bcc5
+  goto end
+:Rel
+  nmake win32ms
+  if exist fte.exe upx fte.exe
+  if exist fte.exe copy fte.exe c:\usr32\f.exe
+  goto end
+:Clean
+  if exist *.exe del  *.exe
+  if exist *.obj del  *.obj
+  if exist *.o del  *.o
+  if exist *.pdb del  *.pdb
+  Echo Clean Completed.
+  goto end
+
+:usage
+  Echo Bind   ms       --- Win32 MSVC
+  Echo        mi       --- MingW32
+  Echo        bc       --- BCC32 5.5
+  Echo        clean    --- Clean *.EXE and *.OBJ
+:End
+  Echo on

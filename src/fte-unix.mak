@@ -5,7 +5,7 @@
 
 #  vfte - for Linux console directly (with limitations, see con_linux.cpp)
 
-TARGETS = nfte xfte sfte vfte
+TARGETS = xfte vfte nfte
 #TARGETS = xfte vfte sfte nfte
 #TARGETS = xfte
 
@@ -18,48 +18,31 @@ PRIMARY = xfte
 #REMAPFLAG = -DUSE_HARD_REMAP
 
 # Drawing fonts with locale support
-#XMBFLAG = -DUSE_XMB
+XMBFLAG = #-DUSE_XMB
 
 # System X11R6 is compiled with X_LOCALE
 #SYSTEM_X_LOCALE = -DX_LOCALE
 
 # Enable normal locale support
-#USE_LOCALE = -DUSE_LOCALE
+USE_LOCALE = -DUSE_LOCALE
 
-#I18NOPTIONS = $(XMBFLAG) $(REMAPFLAG) $(SYSTEM_X_LOCALE) $(USE_LOCALE)
+I18NOPTIONS = $(XMBFLAG) $(REMAPFLAG) $(SYSTEM_X_LOCALE) $(USE_LOCALE)
 
 # Optionally, you can define:
 # -DDEFAULT_INTERNAL_CONFIG to use internal config by default
 # -DUSE_XTINIT to use XtInitialize on init
 # -DFTE_NO_LOGGING to completely disable trace logging
-ifeq "$(FTECONFIG)" "minimal"
-DEFAULT_FTE_CONFIG = minimal.fte
-APPOPTIONS = -DCONFIG_MINIMAL
-endif
-ifeq "$(FTECONFIG)" "dosedit"
-DEFAULT_FTE_CONFIG = dosedit.fte
-APPOPTIONS = -DCONFIG_MINIMAL -DCONFIG_DOSEDIT
-endif
-ifeq "$(DEFAULT_FTE_CONFIG)" ""
-DEFAULT_FTE_CONFIG = simple.fte
-endif
-
-
-PREFIX=/usr/local
-SYSTEM_FTERC=$(PREFIX)/lib/fte/system.fterc
+APPOPTIONS = -DDEFAULT_INTERNAL_CONFIG
 
 #gcc/g++
-#COPTIONS = -Wall -Wpointer-arith -Wconversion -Wwrite-strings \
-#           -Winline
+COPTIONS = -Wall -Wpointer-arith -Wconversion -Wwrite-strings \
+           -Winline
 
-#CROSS = /export/tools/bin/i386-linux-
 #CC       = g++
 #LD       = g++
 # try this for smaller/faster code and less dependencies
-CCNATIVE = g++ -fno-rtti -fno-exceptions 
-LDNATIVE = g++ -fno-rtti -fno-exceptions 
-CC       = $(CROSS)$(CCNATIVE)
-LD       = $(CROSS)$(LDNATIVE)
+CC       = g++ -fno-rtti -fno-exceptions
+LD       = g++ -fno-rtti -fno-exceptions
 
 
 # choose your os here
@@ -88,8 +71,7 @@ XLIBDIR  = -L/usr/X11R6/lib -lstdc++
 #MINCDIR  = -I/usr/include/Motif1.2
 #MLIBDIR  = -L/usr/lib/Motif1.2
 
-#SINCDIR   = -I/usr/include/slang
-#SINCDIR   = -I/usr/local/include
+SINCDIR   = -I/usr/include/slang
 
 #######################################################################
 # AIX
@@ -155,15 +137,11 @@ MOC      = moc
 LIBDIR   =
 INCDIR   =
 
-ifneq "$(FTECONFIG)" ""
-OPTIMIZE = -O2 -s
-else
 OPTIMIZE = -g # -O -g
 #OPTIMIZE = -O2
 #OPTIMIZE = -O2 -s
-endif
 
-CCFLAGS  = $(OPTIMIZE) $(I18NOPTIONS) $(APPOPTIONS) -DSYSTEM_FTERC='"$(SYSTEM_FTERC)"' $(COPTIONS) -DUNIX $(UOS) $(INCDIR) $(XINCDIR) $(QINCDIR) $(MINCDIR) $(SINCDIR)
+CCFLAGS  = $(OPTIMIZE) $(I18NOPTIONS) $(APPOPTIONS) $(COPTIONS) -DUNIX $(UOS) $(INCDIR) $(XINCDIR) $(QINCDIR) $(MINCDIR) $(SINCDIR)
 LDFLAGS  = $(OPTIMIZE) $(LIBDIR) $(XLIBDIR) $(QLIBDIR) $(MLIBDIR)
 
 OEXT     = o
@@ -179,7 +157,7 @@ XLIBS    = -lX11 $(SOCKETLIB)
 VLIBS    = -lgpm -lncurses
 # -ltermcap outdated by ncurses
 NLIBS    = -lncurses
-SLIBS    = /usr/lib/libslang.a
+SLIBS    = -lslang
 QLIBS    = -lqt
 #MLIBS    = -lXm -lXp -lXt -lXpm -lXext
 
@@ -189,23 +167,14 @@ QLIBS    = -lqt
 .c.o:
 	$(CC) $(CCFLAGS) -c $<
 
-native-%.o: %.c
-	$(CCNATIVE) $(CCFLAGS) -c $< -o $@
-
-native-%.o: %.cpp
-	$(CCNATIVE) $(CCFLAGS) -c $< -o $@
-
 .cpp.moc:
 	$(MOC) $< -o $@
 
-all:    $(CFTE_TARGET) $(TARGETS)
+all:    cfte $(TARGETS)
 #rm -f fte ; ln -s $(PRIMARY) fte
 
 cfte: cfte.o s_files.o s_string.o
-	$(LD) $(LDFLAGS) $+ -o $@
-
-native-cfte: $(patsubst %,native-%,cfte.o s_files.o s_string.o)
-	$(LDNATIVE) $(LDFLAGS) $+ -o $@
+	$(LD) $(LDFLAGS) cfte.o s_files.o s_string.o -o cfte
 
 c_config.o: defcfg.h
 
@@ -213,12 +182,12 @@ defcfg.h: defcfg.cnf
 	perl mkdefcfg.pl <defcfg.cnf >defcfg.h
 
 #DEFAULT_FTE_CONFIG = simple.fte
-#DEFAULT_FTE_CONFIG = defcfg.fte
+DEFAULT_FTE_CONFIG = defcfg.fte
 #DEFAULT_FTE_CONFIG = defcfg2.fte
 #DEFAULT_FTE_CONFIG = ../config/main.fte
 
-defcfg.cnf: $(DEFAULT_FTE_CONFIG) $(NATIVE_PREFIX)cfte
-	./$(NATIVE_PREFIX)cfte $(DEFAULT_FTE_CONFIG) defcfg.cnf
+defcfg.cnf: $(DEFAULT_FTE_CONFIG) cfte
+	./cfte $(DEFAULT_FTE_CONFIG) defcfg.cnf
 
 xfte: .depend $(OBJS) $(XOBJS)
 	$(LD) -o $@ $(LDFLAGS) $(OBJS) $(XOBJS) $(XLIBS)
@@ -253,7 +222,7 @@ tags: $(SRCS) $(wildcard *.h)
 	ctags *.h $(SRCS)
 
 clean:
-	rm -f core *.o .depend $(TARGETS) defcfg.h defcfg.cnf $(NATIVE_PREFIX)cfte cfte fte vfte compkeys tags
+	rm -f core *.o .depend $(TARGETS) defcfg.h defcfg.cnf cfte fte vfte compkeys tags
 
 #
 # include dependency files if they exist

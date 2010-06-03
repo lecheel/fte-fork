@@ -98,7 +98,6 @@ void GxView::HandleEvent(TEvent &Event) {
     GView::HandleEvent(Event);
     Top->HandleEvent(Event);
 
-#ifdef CONFIG_MOUSE
     if (Event.What & evMouse) {
         int W, H;
 
@@ -136,7 +135,6 @@ void GxView::HandleEvent(TEvent &Event) {
             return ;
         }
     }
-#endif
 }
 
 void GxView::Update() {

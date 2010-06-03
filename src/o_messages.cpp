@@ -134,10 +134,8 @@ void EMessages::AddFileError(EBuffer *B, int err) {
     if (P.Row < 0)
         P.Row = 0;
 
-#ifdef CONFIG_BOOKMARKS
     if (B->PlaceBookmark(bk, P) == 1)
         ErrList[err]->Buf = B;
-#endif
 }
 
 void EMessages::FindFileErrors(EBuffer *B) {
@@ -248,9 +246,7 @@ void EMessages::FreeErrors() {
             if (ErrList[i]->Buf != 0) {
                 char bk[16];
                 sprintf(bk, "_MSG.%d", i);
-#ifdef CONFIG_BOOKMARKS
                 ((EBuffer *)(ErrList[i]->Buf))->RemoveBookmark(bk);
-#endif
             }
             free(ErrList[i]->msg);
             free(ErrList[i]->text);
@@ -537,6 +533,14 @@ int EMessages::Compile(char * /*Command*/) {
     return 0;
 }
 
+int EMessages::Grep(char * /*Command*/) {
+    return 0;
+}
+
+int EMessages::Whereis(char * /*Command*/) {
+    return 0;
+}
+
 void EMessages::ShowError(EView *V, int err) {
     if (err >= 0 && err < ErrCount) {
         if (ErrList[err]->file) {
@@ -548,9 +552,7 @@ void EMessages::ShowError(EView *V, int err) {
                 V->SwitchToModel(ErrList[err]->Buf);
 
                 sprintf(bk, "_MSG.%d", err);
-#ifdef CONFIG_BOOKMARKS
                 ErrList[err]->Buf->GotoBookmark(bk);
-#endif
             } else {
                 if (FileLoad(0, ErrList[err]->file, 0, V) == 1) {
                     V->SwitchToModel(ActiveModel);

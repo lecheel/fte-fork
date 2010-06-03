@@ -129,9 +129,8 @@ int EBuffer::BlockCopy(int Append, int clipboard) {
     if (RCount == 0) return 0;
     if (SSBuffer == 0) return 0;
     if (Append) {
-        if (SystemClipboard) {
+        if (SystemClipboard)
             GetPMClip(clipboard);
-        }
     } else
         SSBuffer->Clear();
     SSBuffer->BlockMode = BlockMode;
@@ -180,9 +179,8 @@ int EBuffer::BlockCopy(int Append, int clipboard) {
                 return 0;
         break;
     }
-    if (SystemClipboard) {
+    if (SystemClipboard)
         PutPMClip(clipboard);
-    }
     return 1;
 }
 
@@ -205,9 +203,8 @@ int EBuffer::BlockPaste(int clipboard) {
     EPoint B, E;
     int L, BL;
 
-    if (SystemClipboard) {
+    if (SystemClipboard)
         GetPMClip(clipboard);
-    }
 
     if (SSBuffer == 0) return 0;
     if (SSBuffer->RCount == 0) return 0;
@@ -605,10 +602,8 @@ int EBuffer::BlockReIndent() {
 }
 
 int EBuffer::BlockSelectWord() {
-
-    char word[MAXSEARCH+1];
+    char word[MAXSEARCH + 1];    // Trans to Find Pattern
     int len=0;
-
     int Y = VToR(CP.Row);
     PELine L = RLine(Y);
     int P;
@@ -619,7 +614,10 @@ int EBuffer::BlockSelectWord() {
 
     P = CharOffset(L, CP.Col);
 
-    if (P >= L->Count) return 0;
+    if (P >= L->Count) {
+        Msg(S_INFO, ">>Empty Selection");
+        return 0;
+        }
     C = ChClassK(L->Chars[P]);
 
     while ((P > 0) && (C == ChClassK(L->Chars[P - 1]))) P--;
@@ -627,19 +625,17 @@ int EBuffer::BlockSelectWord() {
     while ((P < L->Count) && (C == ChClassK(L->Chars[P]))) P++;
     if (SetBE(EPoint(Y, ScreenPos(L, P))) == 0) return 0;
 
-    //.{ lechee Trans to Find Pattern and Set LSearch.ok
-    while ((P > 0) && ((ChClass(L->Chars[P-1]) == 1) || (L->Chars[P-1] == '_') || (L->Chars[P-1] == '@') || (L->Chars[P-1] == '-')))
+    //lechee { Trans to Find Pattern and set LSearch.ok flags
+    while ((P > 0) && ((ChClass(L->Chars[P - 1]) == 1) || (L->Chars[P - 1] == '_') || (L->Chars[P - 1] == '@') || (L->Chars[P - 1] == '-')))
         P--;
-    while (len < int(sizeof(word)) && P < L->Count && (ChClass(L->Chars[P])==1 || L->Chars[P] =='_' || L->Chars[P] == '@' || L->Chars[P] == '-'))
+    while (len < int(sizeof(word)) && P < L->Count && (ChClass(L->Chars[P]) == 1 || L->Chars[P] == '_' || L->Chars[P] == '@' || L->Chars[P] == '-'))
         word[len++] = L->Chars[P++];
     word[len] = 0;
-    if (strlen(word)) {
-      strcpy(SearchPattern,word);
-      strcpy(LSearch.strSearch,word);
-      LSearch.ok = 1;
-      if (ParseSearchOptions(0, "i", LSearch.Options) ==0) return 0;
-    }
-    //.}
+    strcpy(SearchPattern,word);
+    strcpy(LSearch.strSearch,word);
+    LSearch.ok = 1;
+    if (ParseSearchOptions(0, "i", LSearch.Options) == 0) return 0;
+    // }
 
     return 1;
 }

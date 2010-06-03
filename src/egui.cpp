@@ -106,10 +106,8 @@ int EGUI::ExecCommand(GxView *view, int Command, ExState &State) {
     case ExWinNext:                 return WinNext(view);
     case ExWinPrev:                 return WinPrev(view);
     case ExShowEntryScreen:         return ShowEntryScreen();
-#ifdef CONFIG_EXTERNAL_COMMAND
     case ExRunProgram:              return RunProgram(State, view);
     case ExRunProgramAsync:         return RunProgramAsync(State, view);
-#endif
     case ExMainMenu:                return MainMenu(State, view);
     case ExShowMenu:                return ShowMenu(State, view);
     case ExLocalMenu:               return LocalMenu(view);
@@ -121,13 +119,11 @@ int EGUI::ExecCommand(GxView *view, int Command, ExState &State) {
     case ExWinClose:                return WinClose(view);
     case ExWinZoom:                 return WinZoom(view);
     case ExWinResize:               return WinResize(State, view);
-#ifdef CONFIG_DESKTOP
     case ExDesktopSaveAs:           return DesktopSaveAs(State, view);
     case ExDesktopSave:
         if (DesktopFileName[0] != 0)
             return SaveDesktop(DesktopFileName);
         return 0;
-#endif
     case ExChangeKeys:
         {
             char kmaps[64] = "";
@@ -540,7 +536,6 @@ int EGUI::ShowEntryScreen() {
     return gui->ShowEntryScreen();
 }
 
-#ifdef CONFIG_EXTERNAL_COMMAND
 int EGUI::RunProgram(ExState &State, GxView *view) {
     static char Cmd[512] = "";
 
@@ -564,7 +559,6 @@ int EGUI::RunProgramAsync(ExState &State, GxView *view) {
     gui->RunProgram(RUN_ASYNC, Cmd);
     return 1;
 }
-#endif
 
 int EGUI::MainMenu(ExState &State, GxView *View) {
     char s[3];
@@ -598,7 +592,6 @@ int EGUI::LocalMenu(GxView *View) {
     return 0;
 }
 
-#ifdef CONFIG_DESKTOP
 int EGUI::DesktopSaveAs(ExState &State, GxView *view) {
     if (State.GetStrParam(0, DesktopFileName, sizeof(DesktopFileName)) == 0)
         if (view->GetFile("Save Desktop", sizeof(DesktopFileName), DesktopFileName, HIST_PATH, GF_SAVEAS) == 0)
@@ -608,7 +601,6 @@ int EGUI::DesktopSaveAs(ExState &State, GxView *view) {
         return SaveDesktop(DesktopFileName);
     return 0;
 }
-#endif
 
 int EGUI::FrameNew() {
     GxView *view;
@@ -838,12 +830,10 @@ int EGUI::CmdLoadFiles(int &argc, char **argv) {
                     ModeOverride = 1;
                     strcpy(Mode, argv[Arg] + 2);
                 }
-#ifdef CONFIG_TAGS
             } else if (argv[Arg][1] == 'T') {
                 TagsAdd(argv[Arg] + 2);
             } else if (argv[Arg][1] == 't') {
                 TagGoto(ActiveView, argv[Arg] + 2);
-#endif
             } else {
                 DieError(2, "Invalid command line option %s", argv[Arg]);
                 return 0;
@@ -853,13 +843,8 @@ int EGUI::CmdLoadFiles(int &argc, char **argv) {
 
             QuoteNext = 0;
             if (ExpandPath(argv[Arg], Path, sizeof(Path)) == 0 && IsDirectory(Path)) {
-#ifdef CONFIG_OBJ_DIRECTORY
                 EModel *m = new EDirectory(cfAppend, &ActiveModel, Path);
                 assert(ActiveModel != 0 && m != 0);
-#else
-	 ConDone();
-        DieError(0, "directory loading disabled.");
-#endif
             } else {
                 if (LCount != 0)
                     suspendLoads = 1;
@@ -878,12 +863,10 @@ int EGUI::CmdLoadFiles(int &argc, char **argv) {
                         GotoLine = 0;
                         ((EBuffer *)ActiveModel)->SetNearPosR(ColNum - 1, LineNum - 1);
                     } else {
-#ifdef CONFIG_HISTORY
                         int r, c;
 
                         if (RetrieveFPos(((EBuffer *)ActiveModel)->FileName, r, c) == 1)
                             ((EBuffer *)ActiveModel)->SetNearPosR(c, r);
-#endif
                     }
                     //ActiveView->SelectModel(ActiveModel);
                 }
@@ -898,12 +881,6 @@ int EGUI::CmdLoadFiles(int &argc, char **argv) {
             LCount++;
         }
     }
-    if(!LCount)
-    {
-	FileLoad(0, "", 0, ActiveView);
-	LCount++;
-    }
-
     EModel *P = ActiveModel;
     while (LCount-- > 0)
         P = P->Prev;
@@ -946,6 +923,7 @@ int EGUI::Start(int &argc, char **argv) {
         assert(ActiveModel != 0 && m != 0);
         ActiveView->SwitchToModel(ActiveModel);
 #else
+        Usage();
         return 1;
 #endif
     }
@@ -1023,7 +1001,6 @@ void EGUI::Stop() {
         Macros = NULL;
     }
 
-#ifdef CONFIG_SYNTAX_HILIT
     // free colorizers
     {
         EColorize *p;
@@ -1033,7 +1010,6 @@ void EGUI::Stop() {
             delete p;
         }
     }
-#endif
 
     // free event maps
     {
@@ -1089,9 +1065,7 @@ void EGUI::Stop() {
 
     // free CRegexp array from o_messages.cpp
     {
-#ifdef CONFIG_OBJ_MESSAGES
         FreeCRegexp();
-#endif
     }
 
 #ifdef CONFIG_OBJ_CVS

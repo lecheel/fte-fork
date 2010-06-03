@@ -10,7 +10,6 @@
 #include <ncurses.h>
 #include <unistd.h>
 
-#include "feature.h"
 #include "sysdep.h"
 #include "c_config.h"
 #include "console.h"
@@ -152,9 +151,7 @@ int ConInit(int /*XSize */ , int /*YSize */ )
 	ESCDELAY = escDelay;
 	initscr();
 	ConInitColors();
-#ifdef CONFIG_MOUSE
 	mousemask(ALL_MOUSE_EVENTS|REPORT_MOUSE_POSITION, NULL);
-#endif
 	/*    cbreak (); */
 	raw();
 	noecho();
@@ -406,7 +403,6 @@ int ConSetCursorSize(int /*Start */ , int /*End */ )
 	return 0;
 }
 
-#ifdef CONFIG_MOUSE
 int ConSetMousePos(int /*X */ , int /*Y */ )
 {
 	return -1;
@@ -489,14 +485,13 @@ static int ConGetMouseEvent(
 	}
 	return 0;
 }
-#endif
 
 static TEvent Prev =
 {evNone};
 
 static int ConGetEscEvent(TEvent *Event)
 {
-	int ch;
+	char ch;
 	
 	TKeyEvent *KEvent = &(Event->Key);
 
@@ -518,8 +513,8 @@ static int ConGetEscEvent(TEvent *Event)
 	}
 	else if(ch == '[' || ch == 'O')
 	{
-		int ch1 = getch();
-		int ch2 = '\0';
+		char ch1 = getch();
+		char ch2 = '\0';
 		if(ch1 >= '1' &&  ch1 <= '8')
 		{
 			ch2 = getch();
@@ -618,9 +613,7 @@ static int ConGetEscEvent(TEvent *Event)
 	return 1;
 }
 
-#ifdef CONFIG_EXTERNAL_COMMAND
 extern int WaitPipeEvent(TEvent *Event,int WaitTime, int *fds, int nfds);
-#endif
 
 int ConGetEvent(TEventMask /*EventMask */ ,
 		TEvent * Event, int WaitTime, int Delete)
@@ -639,18 +632,7 @@ int ConGetEvent(TEventMask /*EventMask */ ,
 
     sfd[0] = STDIN_FILENO;
 
-#ifdef CONFIG_EXTERNAL_COMMAND
-    rtn=WaitPipeEvent(Event,-1, sfd, 1);
-    if(rtn < 0) return rtn;
-    if(rtn == 1) return 0;
-#else
-    {
-       fd_set readfds;
-       FD_ZERO(&readfds);
-       FD_SET(STDIN_FILENO, &readfds);
-       if ((rtn=select(1, &readfds, NULL, NULL, NULL)) < 0) return rtn;
-    }
-#endif
+    if((rtn=WaitPipeEvent(Event,-1, sfd, 1)) != 0) return rtn;
 
 	int ch = wgetch(stdscr);
 	Event->What = evKeyDown;
@@ -698,12 +680,10 @@ int ConGetEvent(TEventMask /*EventMask */ ,
 				ResizeWindow(COLS,LINES);
 				Event->What = evNone;
 				break;
-#ifdef CONFIG_MOUSE
 			case KEY_MOUSE:
 				Event->What = evNone;
 				ConGetMouseEvent(Event);
 				break;
-#endif
 			case KEY_SRIGHT:
 				KEvent->Code = kfShift | kbRight;
 				break;
@@ -730,7 +710,7 @@ int ConGetEvent(TEventMask /*EventMask */ ,
 				break;
 			case KEY_BACKSPACE:
 				KEvent->Code = kbBackSp;
-                            break;
+				break;
 			case KEY_HOME:
 				KEvent->Code = kbHome;
 				break;
@@ -801,10 +781,8 @@ int ConGetEvent(TEventMask /*EventMask */ ,
 
 char ConGetDrawChar(int idx)
 {
-    static const char *tab=NULL;
-    //    return 128+idx;
-    tab=GetGUICharacters ("Linux","++++-|+++++>.*-^v :[>");
-    return tab[idx];
+	//    return 128+idx;
+	return idx;
 }
 
 int ConPutEvent(TEvent Event)
@@ -848,9 +826,7 @@ int GUI::RunProgram(int /*mode */ , char *Command)
 	int rc, W, H, W1, H1;
 
 	ConQuerySize(&W, &H);
-#ifdef CONFIG_MOUSE
 	ConHideMouse();
-#endif
 	ConSuspend();
 
 	if (*Command == 0)		// empty string = shell
@@ -859,9 +835,7 @@ int GUI::RunProgram(int /*mode */ , char *Command)
 	rc = system(Command);
 
 	ConContinue();
-#ifdef CONFIG_MOUSE
 	ConShowMouse();
-#endif
 	ConQuerySize(&W1, &H1);
 
 	if (W != W1 || H != H1) {

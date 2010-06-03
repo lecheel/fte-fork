@@ -318,9 +318,7 @@ int ExComplete::RefreshComplete()
 
     // fprintf(stderr, "Calling %d  %s\n", wlen, WordBegin);
     // Search words in TAGS
-#ifdef CONFIG_TAGS
     TagComplete(Words, &WordsLast, MAXCOMPLETEWORDS, WordBegin);
-#endif
     // fprintf(stderr, "Located %d words\n", WordsLast);
     // these words are already sorted
 

@@ -8,7 +8,6 @@
  */
 
 #include "fte.h"
-#ifdef CONFIG_PRINT
 
 int EBuffer::BlockPrint() {
     static char cr = 13;
@@ -193,4 +192,3 @@ fail:
     Msg(S_ERROR, "Error printing %s to %s.", FileName, PrintDevice);
     return 0;
 }
-#endif

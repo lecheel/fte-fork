@@ -1,5 +1,4 @@
 #include "fte.h"
-#ifdef CONFIG_OBJ_BUFFERS
 
 EMarkIndex markIndex;
 
@@ -36,12 +35,10 @@ int EMark::setBuffer(EBuffer *aBuffer) {
     if (Point.Row < 0)
         Point.Row = 0;
 
-#ifdef CONFIG_BOOKMARKS
     if (aBuffer->PlaceBookmark(Name, Point) == 1) {
         Buffer = aBuffer;
         return 1;
     }
-#endif
     return 0;
 }
 
@@ -51,23 +48,19 @@ int EMark::removeBuffer(EBuffer *aBuffer) {
         return 0;
     assert(filecmp(aBuffer->FileName, FileName) == 0);
 
-#ifdef CONFIG_BOOKMARKS
     if (Buffer->GetBookmark(Name, Point) == 0)
         return 0;
     if (Buffer->RemoveBookmark(Name) == 0)
         return 0;
-#endif
     
     Buffer = 0;
     return 1;
 }
 
 EPoint &EMark::getPoint() {
-#ifdef CONFIG_BOOKMARKS
     if (Buffer) {
         assert(Buffer->GetBookmark(Name, Point) != 0);
     }
-#endif
     return Point;
 }
 
@@ -187,9 +180,7 @@ int EMarkIndex::view(EView *aView, char *aName) {
             b = (EBuffer *)ActiveModel;
         }
         aView->SwitchToModel(b);
-#ifdef CONFIG_BOOKMARKS
         return b->GotoBookmark(m->getName());
-#endif
     }
     return 0;
 }
@@ -265,4 +256,3 @@ int EMarkIndex::popMark(EView *aView) {
     assert(remove(name) == 1);
     return 1;
 }
-#endif

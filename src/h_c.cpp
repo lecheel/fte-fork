@@ -8,8 +8,10 @@
  */
 
 #include "fte.h"
-#ifdef CONFIG_HILIT_C
 #include "log.h"
+
+#ifdef CONFIG_HILIT_C
+
 
 #define PRINTF(x) //printf x
 

@@ -325,7 +325,7 @@ int ReadConsoleEvent(TEvent *E) /*FOLD00*/
                 case '~': Ch = '~'; break;
                 case '^': Ch = '^'; break;
                 case '`': Ch = '`'; break;
-//.                case 'ï': Ch = 'ï'; break;
+                case 'ï': Ch = 'ï'; break;
                 }
             }
         }

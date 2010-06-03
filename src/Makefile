@@ -29,8 +29,6 @@ djgpp2:
 
 vag:
 	nmake /f fte-vag.mak
-cp:
-	cp -f nfte cfte /usr/local/bin
 
 clean:
 	rm -f core *.o *~ .depend

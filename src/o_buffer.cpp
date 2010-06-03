@@ -9,20 +9,6 @@
 
 #include "fte.h"
 
-int EBuffer::NextCommand() {
-    if (Match.Row != -1) {
-        Draw(Match.Row, Match.Row);
-        Match.Col = Match.Row = -1;
-    }
-    if (View)
-        View->SetMsg(0);
-#ifdef CONFIG_UNDOREDO
-    return BeginUndo();
-#else
-    return 1;
-#endif
-}
-
 SearchReplaceOptions LSearch = { 0 };
 int suspendLoads = 0;
 
@@ -41,9 +27,7 @@ EViewPort *EBuffer::CreateViewPort(EView *V) {
         if (CvsDiffView) CvsDiffView->FindFileLines(this);
 #endif
 
-#ifdef CONFIG_BOOKMARKS
         markIndex.retrieveForBuffer(this);
-#endif
 
 #ifdef CONFIG_HISTORY
         int r, c;
@@ -222,17 +206,14 @@ void EEditPort::HandleEvent(TEvent &Event) {
             break;
         }
         break;
-#ifdef CONFIG_MOUSE
     case evMouseDown:
     case evMouseMove:
     case evMouseAuto:
     case evMouseUp:
         HandleMouse(Event);
         break;
-#endif
     }
 }
-#ifdef CONFIG_MOUSE
 void EEditPort::HandleMouse(TEvent &Event) {
     int x, y, xx, yy, W, H;
 
@@ -365,7 +346,6 @@ void EEditPort::HandleMouse(TEvent &Event) {
         }
     }
 }
-#endif
 
 void EEditPort::UpdateView() {
     Buffer->Redraw();
@@ -428,10 +408,8 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
     case ExMoveBlockEnd:          return MoveBlockEnd();
     case ExMoveFirstNonWhite:     return MoveFirstNonWhite();
     case ExMoveLastNonWhite:      return MoveLastNonWhite();
-#ifdef CONFIG_INDENT
     case ExMovePrevEqualIndent:   return MovePrevEqualIndent();
     case ExMoveNextEqualIndent:   return MoveNextEqualIndent();
-#endif
     case ExMovePrevTab:           return MovePrevTab();
     case ExMoveNextTab:           return MoveNextTab();
     case ExMoveTabStart:          return MoveTabStart();
@@ -458,14 +436,12 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
     case ExKillBlock:             return KillBlock();
     case ExBackSpace:             return BackSpace();
     case ExDelete:                return Delete();
-#ifdef CONFIG_TRANS
     case ExCharCaseUp:            return CharCaseUp();
     case ExCharCaseDown:          return CharCaseDown();
     case ExCharCaseToggle:        return CharCaseToggle();
     case ExLineCaseUp:            return LineCaseUp();
     case ExLineCaseDown:          return LineCaseDown();
     case ExLineCaseToggle:        return LineCaseToggle();
-#endif
     case ExLineInsert:            return LineInsert();
     case ExLineAdd:               return LineAdd();
     case ExLineSplit:             return LineSplit();
@@ -528,11 +504,9 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
     case ExBlockMarkStream:       return BlockMarkStream();
     case ExBlockMarkLine:         return BlockMarkLine();
     case ExBlockMarkColumn:       return BlockMarkColumn();
-#ifdef CONFIG_TRANS
     case ExBlockCaseUp:           return BlockCaseUp();
     case ExBlockCaseDown:         return BlockCaseDown();
     case ExBlockCaseToggle:       return BlockCaseToggle();
-#endif
     case ExBlockExtendBegin:      return BlockExtendBegin();
     case ExBlockExtendEnd:        return BlockExtendEnd();
     case ExBlockReIndent:         return BlockReIndent();
@@ -555,13 +529,12 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
     case ExMoveSavedPos:          return MoveSavedPos();
     case ExSavePos:               return SavePos();
     case ExCompleteWord:          return CompleteWord();
-    case ExCompleteGrep:          return CompleteGrep();   // lechee
+    case ExCompleteGrep:          return CompleteGrep();
     case ExBlockPasteStream:      return BlockPasteStream();
     case ExBlockPasteLine:        return BlockPasteLine();
     case ExBlockPasteColumn:      return BlockPasteColumn();
     case ExBlockPasteOver:        return BlockPasteOver();
     case ExShowPosition:          return ShowPosition();
-#ifdef CONFIG_FOLDS
     case ExFoldCreate:            return FoldCreate(VToR(CP.Row));
     case ExFoldDestroy:           return FoldDestroy(VToR(CP.Row));
     case ExFoldDestroyAll:        return FoldDestroyAll();
@@ -577,12 +550,9 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
     case ExMoveFoldTop:           return MoveFoldTop();
     case ExMoveFoldPrev:          return MoveFoldPrev();
     case ExMoveFoldNext:          return MoveFoldNext();
-#endif
     case ExFileSave:              return Save();
-#ifdef CONFIG_PRINT
     case ExFilePrint:             return FilePrint();
     case ExBlockPrint:            return BlockPrint();
-#endif
     case ExBlockTrim:             return BlockTrim();
     case ExFileTrim:              return FileTrim();
     case ExHilitWord:
@@ -595,13 +565,10 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
     case ExSearchWordNext:        return SearchWord(SEARCH_NEXT);
     case ExHilitMatchBracket:     return HilitMatchBracket();
     case ExToggleAutoIndent:      return ToggleAutoIndent();
-    case ExToggleAutoTag:         return ToggleAutoTag();
     case ExToggleInsert:          return ToggleInsert();
     case ExToggleExpandTabs:      return ToggleExpandTabs();
     case ExToggleShowTabs:        return ToggleShowTabs();
-#ifdef CONFIG_UNDOREDO
     case ExToggleUndo:            return ToggleUndo();
-#endif
     case ExToggleReadOnly:        return ToggleReadOnly();
     case ExChangeToReadOnly:      return ChangeToReadOnly();
     case ExToggleKeepBackups:     return ToggleKeepBackups();
@@ -623,24 +590,20 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
 
         // stuff with UI
     case ExMoveToLine:          return MoveToLine(State);
-    case ExFileGrepLine:        return FileGrepLine();   //lechee
+    case ExFileGrepLine:        return FileGrepLine();
     case ExMoveToColumn:        return MoveToColumn(State);
-#ifdef CONFIG_FOLDS
     case ExFoldCreateByRegexp:  return FoldCreateByRegexp(State);
-#endif
 #ifdef CONFIG_BOOKMARKS
     case ExPlaceBookmark:       return PlaceBookmark(State);
     case ExRemoveBookmark:      return RemoveBookmark(State);
     case ExGotoBookmark:        return GotoBookmark(State);
-    case ExPlaceGlobalBookmark: return PlaceGlobalBookmark(State);
-    case ExPushGlobalBookmark:  return PushGlobalBookmark();
 #else
     case ExPlaceBookmark:       return ErFAIL;
     case ExRemoveBookmark:      return ErFAIL;
     case ExGotoBookmark:        return ErFAIL;
-    case ExPlaceGlobalBookmark: return ErFAIL;
-    case ExPushGlobalBookmark:  return ErFAIL;
 #endif
+    case ExPlaceGlobalBookmark: return PlaceGlobalBookmark(State);
+    case ExPushGlobalBookmark:  return PushGlobalBookmark();
     case ExInsertString:        return InsertString(State);
     case ExSelfInsert:          return SelfInsert(State);
     case ExFileReload:          return FileReload(State);
@@ -667,7 +630,6 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
     case ExSearchReplaceB:      return SearchReplaceB(State);
     case ExSearchReplaceRx:     return SearchReplaceRx(State);
     case ExInsertChar:          return InsertChar(State);
-    case ExInsertAdupChar:      return InsertAdupChar(State);
     case ExTypeChar:            return TypeChar(State);
     case ExChangeMode:          return ChangeMode(State);
     //case ExChangeKeys:          return ChangeKeys(State);
@@ -681,32 +643,26 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
 #else
         return ErFAIL;
 #endif
-#ifdef CONFIG_TRANS
     case ExCharTrans:           return CharTrans(State);
     case ExLineTrans:           return LineTrans(State);
     case ExBlockTrans:          return BlockTrans(State);
-#endif
 
 #ifdef CONFIG_TAGS
     case ExTagFind:             return FindTag(State);
     case ExTagFindWord:         return FindTagWord(State);
 #endif
 
-#ifdef CONFIG_INDENT_C
     case ExSetCIndentStyle:     return SetCIndentStyle(State);
-#endif
 
     case ExBlockMarkFunction:   return BlockMarkFunction();
     case ExIndentFunction:      return IndentFunction();
     case ExMoveFunctionPrev:    return MoveFunctionPrev();
     case ExMoveFunctionNext:    return MoveFunctionNext();
     case ExBlockComment:        return BlockComment(State);
-    case ExBlockUnComment:      return BlockUnComment(State);
+    case ExInsertComment:       return InsertComment(State);
     case ExInsertDate:          return InsertDate(State);
     case ExInsertUid:           return InsertUid();
-#ifdef CONFIG_HELP
     case ExShowHelpWord:        return ShowHelpWord(State);
-#endif
     }
     return EModel::ExecCommand(Command, State);
 }
@@ -747,7 +703,6 @@ int EBuffer::MoveToColumn(ExState &State) {
     return SetNearPos(No - 1, CP.Row);
 }
 
-#ifdef CONFIG_FOLDS
 int EBuffer::FoldCreateByRegexp(ExState &State) {
     char strbuf[1024] = "";
 
@@ -756,7 +711,6 @@ int EBuffer::FoldCreateByRegexp(ExState &State) {
     }
     return FoldCreateByRegexp(strbuf);
 }
-#endif
 
 #ifdef CONFIG_BOOKMARKS
 int EBuffer::PlaceUserBookmark(const char *n,EPoint P) {
@@ -862,6 +816,7 @@ int EBuffer::GotoBookmark(ExState &State) {
         if (View->MView->Win->GetStr("Goto Bookmark", sizeof(name), name, HIST_BOOKMARK) == 0) return 0;
     return GotoUserBookmark(name);
 }
+#endif
 
 int EBuffer::PlaceGlobalBookmark(ExState &State) {
     char name[256] = "";
@@ -886,7 +841,6 @@ int EBuffer::PushGlobalBookmark() {
          Msg(S_INFO, "Placed bookmark %s", m->getName());
     return m ? 1 : 0;
 }
-#endif
 
 int EBuffer::InsertChar(ExState &State) {
     char Ch;
@@ -903,25 +857,6 @@ int EBuffer::InsertChar(ExState &State) {
     Ch = char(No);
     return InsertChar(Ch);
 }
-
-int EBuffer::InsertAdupChar(ExState &State) {
-    unsigned char CurCh = 0xFF;
-    int CurLine;
-    int CurColumn;
-    int ActLine;
-    int CurPos;
-
-    if (CP.Row>0) {
-        CurLine = CP.Row -1;
-        ActLine = VToR(CP.Row-1);
-        CurColumn = CP.Col;
-        if (CurColumn>LineLen(VToR(CP.Row-1))-1) return 0;
-        CurPos = CharOffset(RLine(ActLine),CurColumn);
-        CurCh = VLine(CurLine)->Chars[CurPos];
-        return InsertChar(CurCh);
-    } else return 0;
-}
-
 
 int EBuffer::TypeChar(ExState &State) {
     char Ch;
@@ -1548,14 +1483,18 @@ int EBuffer::FindTag(ExState &State) {
 #endif
 
 int EBuffer::BlockComment(ExState &State) {
-    char strbuf[512] = "";
+    char strbuf[256] = "";
     EPoint B,E;
     int L;
 
-    if ((CheckBlock() == 0)||(RCount ==0)) {
+    if (CheckBlock() == 0) {
        Msg(S_INFO,">>This operator only work as block mode!!!");
        return 0;
     }
+    if (RCount == 0) {
+       Msg(S_INFO,">>This operator only work as block mode!!!");
+       return 0;
+       }
     B = BB;
     E = BE;
     for (L = B.Row; L <= E.Row; L++) {
@@ -1568,26 +1507,53 @@ int EBuffer::BlockComment(ExState &State) {
     return 1;
 }
 
-int EBuffer::BlockUnComment(ExState &State) {
+int EBuffer::InsertComment(ExState &State) {
+    char strbuf[1024] = "";
+    char mark_pat[10] = "";
+    char *ext1[]={"asm","inc","equ",NULL};
+    char *ext2[]={"asi","asl","c","cpp","cc",NULL};
+    char *ext3[]={"mak","scr",NULL};
+    int k;
+    char *q;
+    char dateStr[128] = "";
 
-    char strbuf[512]="";
-    EPoint B,E;
-    int L;
-    if ((CheckBlock() == 0)||(RCount ==0)) {
-       Msg(S_INFO,">>This operator only work as block mode!!!");
-       return 0;
-    }
-    B = BB;
-    E = BE;
+    k = 0;
+    do {
+     if (ext1[k]!=NULL)
+        if (!stricmp(Mode->fName,ext1[k])) {
+                strcpy(mark_pat," ; ");
+                break;
+         }
+   } while (ext1[k++]!=NULL);
+
+    k = 0;
+    do {
+     if (ext2[k]!=NULL)
+        if (!stricmp(Mode->fName,ext2[k])) {
+                strcpy(mark_pat," // ");
+                break;
+         }
+   } while (ext2[k++]!=NULL);
+
+    k = 0;
+    do {
+     if (ext3[k]!=NULL)
+        if (!stricmp(Mode->fName,ext3[k])) {
+                strcpy(mark_pat," # ");
+                break;
+         }
+   } while (ext3[k++]!=NULL);
+
+    q = getenv("bugfix");
+    GetDate(dateStr);
+    sprintf(strbuf,"%s%s[%s].",mark_pat,dateStr,q);
+    MoveLineEnd();
+    if ((VToR(CP.Col)) < 58) {
+          MoveLineComment(58);
+        }
     strcpy(strbuf,BFS(this, BFS_CommentPat));
-    if (!strlen(strbuf)) {
-       Msg(S_INFO,">>No comment define for this file type!!!");
-    }
-    for (L = B.Row; L <= E.Row; L++) {
-
-    }
-
-    return 1;
+    return InsertString(strbuf,strlen(strbuf));
+//    return InsertString(strbuf, strlen(strbuf));
 }
 
 
@@ -1630,7 +1596,6 @@ int EBuffer::InsertUid() {
     return InsertString(p, strlen(p));
 }
 
-#ifdef CONFIG_HELP
 int EBuffer::ShowHelpWord(ExState &State) {
     //** Code for BlockSelectWord to find the word under the cursor,
     const char *achr = "+-_."; // these are accepted characters
@@ -1676,7 +1641,6 @@ int EBuffer::ShowHelpWord(ExState &State) {
     //}
     return View->SysShowHelp(State, buf[0] ? buf : 0);
 }
-#endif
 
 int EBuffer::GetStrVar(int var, char *str, int buflen) {
     assert(buflen >= 0);
@@ -1709,7 +1673,8 @@ int EBuffer::GetStrVar(int var, char *str, int buflen) {
                 dot = dot2;
             if (dot)
                 *dot = 0;
-            strlcpy(str, buf, buflen);
+//            strlcpy(str, buf, buflen);
+            strcpy(str, buf);
         }
         return 1;
 
@@ -1719,12 +1684,14 @@ int EBuffer::GetStrVar(int var, char *str, int buflen) {
             char *dot, *dot2;
 
             JustFileName(FileName, buf, sizeof(buf));
+
             dot = strchr(buf, '.');
             while ((dot2 = strchr(dot + 1, '.')) != NULL)
                 dot = dot2;
-            if (dot)
-                strcpy(str, dot);
+            if (dot) {
 //                strlcpy(str, dot, buflen);
+                strcpy(str, dot);
+                }
             else
                 str[0] = 0;
         }

@@ -42,12 +42,12 @@ colorize C {
 }
 
 mode C: PLAIN {      # C/C++ Mode
-    FileNameRx          = /\.\c{C|H|{CPP}|{CXX}|{HPP}|{CC}|{XS}|{e}|{sl}}$/;
+    FileNameRx          = /\.\c{C|H|{CPP}|{CXX}|{HPP}|{CC}|{XS}|{ASQ}|{ASI}|{ASL}|{APP}}$/;
     HilitOn             = 1;
     Colorizer           = 'C';
     AutoIndent          = 1;
     IndentMode          = 'C';
-    MatchCase           = 1;
+    MatchCase           = 0;
     Trim                = 1;
     MultiLineHilit      = 1;
     AutoHilitParen      = 1;
@@ -64,8 +64,8 @@ mode C: PLAIN {      # C/C++ Mode
 %if(UI_KB)
     TabSize		= 8; # think twice before changing this, historically
 			     # it's been known to cause a mess in sources ;-)
-    SpaceTabs		= 0;
-    IndentWithTabs	= 1;
+    SpaceTabs		= 1;
+    IndentWithTabs	= 0;
     CursorThroughTabs	= 1;
     DeleteKillTab	= 0;
     DeleteKillBlock	= 0;

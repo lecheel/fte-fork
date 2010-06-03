@@ -263,6 +263,5 @@ mode TEX: PLAIN {
     SaveFolds           = 2;      # save fold info at end of line
     CommentStart        = '%';
     CommentEnd          = '';
-    CommentPat          = '%';
 }
 

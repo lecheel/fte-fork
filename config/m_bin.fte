@@ -5,7 +5,7 @@ mode BIN: PLAIN { # Binary Mode
     FirstLineRx         = /[^\r\n\t -\xFF]/;
     HilitOn             = 0;
     AutoIndent          = 0;
-    ShowTabs            = 1;
+    ShowTabs            = 0;
     DetectLineSep       = 0;
     StripChar           = -1;
     LineChar            = -1;
@@ -20,7 +20,7 @@ mode BIN: PLAIN { # Binary Mode
     DeleteKillTab       = 1;
     BackSpUnindents     = 0;
     Trim                = 0;
-    ShowMarkers         = 1;
+    ShowMarkers         = 0;
     WordWrap            = 0;
     MatchCase           = 1;
     ReadOnly            = 1;

@@ -226,6 +226,11 @@ int EBuffer::MoveLineEnd() {
     return 1;
 }
 
+int EBuffer::MoveLineComment(int Cols) {
+    SetPos(Cols,CP.Row);
+    return 1;
+}
+
 int EBuffer::MovePageUp() {
     return ScrollDown(GetVPort()->Rows);
 }
@@ -309,7 +314,6 @@ int EBuffer::MoveLastNonWhite() {
     return 1;
 }
 
-#ifdef CONFIG_INDENT
 int EBuffer::MovePrevEqualIndent() {
     int L = VToR(CP.Row);
     int I = LineIndented(L);
@@ -329,7 +333,6 @@ int EBuffer::MoveNextEqualIndent() {
             return SetPosR(I, L);
     return 0;
 }
-#endif
 
 int EBuffer::MoveNextTab() {
     int P = CP.Col;
@@ -631,7 +634,7 @@ int EBuffer::KillBlockOrCharPrev() {
 
 int EBuffer::BackSpace() {
     int Y = VToR(CP.Row);
-
+    
     if (CheckBlock() == 1 && BFI(this, BFI_BackSpKillBlock)) {
         if (BlockKill() == 0)
             return 0;
@@ -752,10 +755,8 @@ int EBuffer::LineNew() {
         
         //int Indent = LineIndented(VToR(CP.Row));
         
-#ifdef CONFIG_INDENT
         if (!LineIndent())
             return 0;
-#endif
         
         //if (Indent > 0)
         //  if (InsText(Row, C, Indent, 0) == 0)
@@ -768,30 +769,54 @@ int EBuffer::LineNew() {
     return 1;
 }
 
-int EBuffer::LineNews() {  // lechee
+int EBuffer::LineNews() {
     char cmdStr[512];
     char *dot;
     int noDot=1;
-    GetStrVar(mvFileName, cmdStr,512);
-//    strcpy(cmdStr,FileName);
-    if ( (dot = strstr(cmdStr, ".")) !=0 ) noDot=0;
     strcpy(cmdStr,FileName);
-    if (noDot) {
-        LineNew();
-        return 0;
-    }
+    if ( (dot = strstr(cmdStr, ".")) != 0)
+        noDot=0;
+    strcpy(cmdStr,FileName);
     if (BFI(this, BFI_ReadOnly)&&(!noDot)) {
-
-        GetStrVar(mvFileExtension, cmdStr,512);
-        if (!strcmp(cmdStr,".grp")) return 1;
-        return 0;
+    GetStrVar(mvFileExtension,cmdStr,1);
+//    Msg(S_INFO,"LineNews::%s --%s" ,cmdStr,FileName);
+    if (!stricmp(cmdStr,".GRP")) {
+          return 1;
+        } else if (!stricmp(cmdStr,".DIR")) {
+          return 1;
+        }
+    return 0;
     } else {
-        return LineNew();
+    if (SplitLine(VToR(CP.Row), CP.Col) == 0)
+        return 0;
+    
+    if (!MoveDown())
+        return 0;
+    
+    if (CP.Col > 0) {
+        
+        if (!MoveLineStart())
+            return 0;
+        
+        //int Indent = LineIndented(VToR(CP.Row));
+        
+        if (!LineIndent())
+            return 0;
+        
+        //if (Indent > 0)
+        //  if (InsText(Row, C, Indent, 0) == 0)
+        //    return 0;
+        
+        if (BFI(this, BFI_Trim))
+            if (TrimLine(VToR(CP.Row - 1)) == 0)
+                return 0;
+    }
+    return 0;
     }
 }
 
+
 int EBuffer::LineIndent() {
-#ifdef CONFIG_INDENT
     int rc = 1;
 
     if (BFI(this, BFI_AutoIndent)) {
@@ -814,9 +839,6 @@ int EBuffer::LineIndent() {
     if (BFI(this, BFI_Trim))
         if (TrimLine(VToR(CP.Row)) == 0) return 0;
     return 1;
-#else
-return 0;
-#endif
 }
 
 int EBuffer::LineLen() {
@@ -1012,7 +1034,6 @@ int EBuffer::LineIndentedCharCount(ELine *l, const char *indentchars) {
 }
 
 int EBuffer::IndentLine(int Row, int Indent) {
-#ifdef CONFIG_INDENT
     int I, C;
     int Ind = Indent;
     
@@ -1039,9 +1060,6 @@ int EBuffer::IndentLine(int Row, int Indent) {
         }
     }
     return Ind - I;
-#else
-return 0;
-#endif
 }
 
 #ifdef CONFIG_UNDOREDO
@@ -1307,15 +1325,12 @@ int EBuffer::BlockTrim() {
 
 
 int EBuffer::ToggleAutoIndent() { TOGGLE(AutoIndent); }
-int EBuffer::ToggleAutoTag() { TOGGLE(AutoTag); }
 int EBuffer::ToggleInsert() { TOGGLE(Insert); }
 int EBuffer::ToggleExpandTabs() { TOGGLE_R(ExpandTabs); }
 int EBuffer::ToggleShowTabs() { TOGGLE_R(ShowTabs); }
-#ifdef CONFIG_UNDOREDO
 int EBuffer::ToggleUndo() { FreeUndo(); TOGGLE(Undo); }
-#endif
 int EBuffer::ToggleReadOnly() { TOGGLE(ReadOnly); }
-int EBuffer::ChangeToReadOnly() { Flags.num[BFI_ReadOnly]=1; return 1;}
+int EBuffer::ChangeToReadOnly() {Flags.num[BFI_ReadOnly]=1; return 1;}
 int EBuffer::ToggleKeepBackups() { TOGGLE(KeepBackups); }
 int EBuffer::ToggleMatchCase() { TOGGLE(MatchCase); }
 int EBuffer::ToggleBackSpKillTab() { TOGGLE(BackSpKillTab); }
@@ -1354,11 +1369,9 @@ int EBuffer::ChangeMode(char *AMode) {
     if (FindMode(AMode) != 0) {
         Mode = FindMode(AMode);
         Flags = Mode->Flags;
-#ifdef CONFIG_SYNTAX_HILIT
         HilitProc = 0;
         if (Mode && Mode->fColorize)
             HilitProc = GetHilitProc(Mode->fColorize->SyntaxParser);
-#endif
         FullRedraw();
         return 1;
     }
@@ -1369,11 +1382,9 @@ int EBuffer::ChangeMode(char *AMode) {
 int EBuffer::ChangeKeys(char *AMode) {
     if (FindMode(AMode) != 0) {
         Mode = FindMode(AMode);
-#ifdef CONFIG_SYNTAX_HILIT
         HilitProc = 0;
         if (Mode && Mode->fColorize)
             HilitProc = GetHilitProc(Mode->fColorize->SyntaxParser);
-#endif
         FullRedraw();
         return 1;
     }
@@ -1386,11 +1397,9 @@ int EBuffer::ChangeFlags(char *AMode) {
         EMode *XMode;
         XMode = FindMode(AMode);
         Flags = XMode->Flags;
-#ifdef CONFIG_SYNTAX_HILIT
         HilitProc = 0;
         if (Mode && Mode->fColorize)
             HilitProc = GetHilitProc(Mode->fColorize->SyntaxParser);
-#endif
         FullRedraw();
         return 1;
     }

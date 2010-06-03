@@ -19,7 +19,7 @@ color_palette {
     { 'Status_Normal',                'black:darkCyan' },
     { 'Status_Active',                'black:gray' },
 
-    { 'Message_Normal',               'Status_Normal' },
+    { 'Message_Normal',               'cyan:darkBlue' },
     { 'Message_Error',                'white:darkBlue' },
     { 'Message_Bold',                 'white:darkRed' },
 
@@ -79,7 +79,7 @@ color_palette {
     { 'Msg_Tag',                      'white:bg' },
     { 'Msg_Signature',                'darkCyan:bg' },
 
-    { 'Comment',                      'brown:bg' },
+    { 'Comment',                      'darkGreen:bg' },
     { 'String',                       'yellow:bg' },
 
     { 'Lang_Default',                 'Editor_Default' },

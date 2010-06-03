@@ -324,7 +324,6 @@ typedef struct _OrdLookup {
 
 static const OrdLookup mode_num[] = {
 MODE_BFI(AutoIndent),
-MODE_BFI(AutoTag),
 MODE_BFI(Insert),
 MODE_BFI(DrawOn),
 MODE_BFI(HilitOn),
@@ -382,12 +381,12 @@ MODE_BFS(DefFindOpt),
 MODE_BFS(DefFindReplaceOpt),
 MODE_BFS(CommentStart),
 MODE_BFS(CommentEnd),
+MODE_BFS(CommentPat),
 MODE_BFS(WordChars),
 MODE_BFS(CapitalChars),
 MODE_BFS(FileNameRx),
 MODE_BFS(FirstLineRx),
 MODE_BFS(CompileCommand),
-MODE_BFS(CommentPat),
 MODE_BFI(EventMap),
 { 0, 0 },
 };
@@ -443,6 +442,7 @@ MODE_FLG(LoadDesktopMode),
 MODE_FLG(IgnoreBufferList),
 MODE_FLG(ReassignModelIds),
 MODE_FLG(RecheckReadOnly),
+MODE_FLG(BiosHome),
 { 0, 0 },
 };
 

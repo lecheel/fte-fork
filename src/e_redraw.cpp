@@ -9,7 +9,6 @@
 
 #include "fte.h"
 
-#ifdef CONFIG_SYNTAX_HILIT
 int EBuffer::GetMap(int Row, int *StateLen, hsState **StateMap) {
     hlState State = 0;
 
@@ -24,9 +23,11 @@ int EBuffer::GetMap(int Row, int *StateLen, hsState **StateMap) {
         *StateMap = (hsState *) malloc(*StateLen);
         if (*StateMap == 0) return 0;
 
+#ifdef CONFIG_SYNTAX_HILIT
         if (BFI(this, BFI_HilitOn) == 1 && HilitProc != 0)
             HilitProc(this, Row, 0, 0, *StateLen, L, State, *StateMap, &ECol);
         else
+#endif
             Hilit_Plain(this, Row, 0, 0, *StateLen, L, State, *StateMap, &ECol);
         //        if (L->StateE != State) {
         //            L->StateE = State;
@@ -39,7 +40,6 @@ int EBuffer::GetMap(int Row, int *StateLen, hsState **StateMap) {
     }
     return 1;
 }
-#endif
 
 void EBuffer::FullRedraw() { // redraw all views
     EView *V = View;
@@ -63,7 +63,6 @@ void EBuffer::FullRedraw() { // redraw all views
     }
 }
 
-#ifdef CONFIG_SYNTAX_HILIT
 void EBuffer::Hilit(int FromRow) {
     if (FromRow != -1) {
         if (StartHilit == -1)
@@ -120,7 +119,6 @@ void EBuffer::Rehilit(int ToRow) {
         StartHilit++;
     }
 }
-#endif
 
 void EBuffer::Draw(int Row0, int RowE) {
     //    printf("r0 = %d, re = %d\n", Row0, RowE);
@@ -153,28 +151,22 @@ void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
         PELine L = RLine(Row);
         int ECol = 0;
 
-#ifdef CONFIG_SYNTAX_HILIT
         if (Row > 0) State = RLine(Row - 1)->StateE;
-        else
-#endif
-	    State = 0;
+        else State = 0;
 #ifdef CONFIG_SYNTAX_HILIT
         if (BFI(this, BFI_HilitOn) == 1 && HilitProc != 0)
             HilitProc(this, Row, B, C, W, L, State, 0, &ECol);
         else
 #endif
             Hilit_Plain(this, Row, B, C, W, L, State, 0, &ECol);
-#ifdef CONFIG_SYNTAX_HILIT
         if (L->StateE != State) {
             HilitX = 1;
             L->StateE = State;
         }
-#endif
         if (BFI(this, BFI_ShowMarkers)) {
             MoveChar(B, ECol - C, W, ConGetDrawChar((Row == RCount - 1) ? DCH_EOF : DCH_EOL), hcPlain_Markers, 1);
             ECol += 1;
         }
-#ifdef CONFIG_FOLDS
         if (Row < RCount) {
             int f;
             int Folded = 0;
@@ -203,7 +195,6 @@ void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
                 }
             }
         }
-#endif
         if (BB.Row != -1 && BE.Row != -1 && Row >= BB.Row && Row <= BE.Row) {
             switch(BlockMode) {
             case bmLine:
@@ -439,7 +430,7 @@ void EBuffer::Redraw() {
                     else strcpy(CCharStr, "   EOF");
                 }
 
-                sprintf(s, "%04d:%02d %c%c%c%c%c%c %.6s %c"
+                sprintf(s, "%04d:%02d %c%c%c%c%c %.6s %c"
 #ifdef DOS
                         " %lu "
 #endif
@@ -450,7 +441,6 @@ void EBuffer::Redraw() {
                         //                    CurPos + 1,
                         (BFI(this, BFI_Insert)) ? 'I' : ' ',
                         (BFI(this, BFI_AutoIndent)) ? 'A' : ' ',
-                        (BFI(this, BFI_AutoTag)) ? 'T' : ' ',
                         //                    (BFI(this, BFI_ExpandTabs))?'T':' ',
                         (BFI(this, BFI_MatchCase)) ? 'C' : ' ',
                         AutoExtend ?
@@ -465,8 +455,8 @@ void EBuffer::Redraw() {
                         (BFI(this, BFI_WordWrap) == 3) ? 't' :
                         (BFI(this, BFI_WordWrap) == 2) ? 'W' :
                         (BFI(this, BFI_WordWrap) == 1) ? 'w' :
-#endif
                         ' ',
+#endif
                         //                    (BFI(this, BFI_Undo))?'U':' ',
                         //                    (BFI(this, BFI_Trim))?'E':' ',
                         //                    (Flags.KeepBackups)?'B':' ',
@@ -511,9 +501,7 @@ void EBuffer::Redraw() {
         }
     }
 
-#ifdef CONFIG_SYNTAX_HILIT
     Rehilit(VToR(CP.Row));
-#endif
 
     if (BFI(this, BFI_AutoHilitParen) == 1) {
         if (Match.Row == -1 && Match.Col == -1)
@@ -573,7 +561,6 @@ void EBuffer::Redraw() {
     RedrawToEos = 0;
 }
 
-#ifdef CONFIG_WORD_HILIT
 int EBuffer::GetHilitWord(int len, char *str, ChColor &clr, int IgnCase) {
     char *p;
 
@@ -583,6 +570,7 @@ int EBuffer::GetHilitWord(int len, char *str, ChColor &clr, int IgnCase) {
     if (len >= CK_MAXLEN)
         return 0;
 
+#ifdef CONFIG_WORD_HILIT
     {
         char s[CK_MAXLEN + 1];
         s[CK_MAXLEN] = 0;
@@ -593,6 +581,7 @@ int EBuffer::GetHilitWord(int len, char *str, ChColor &clr, int IgnCase) {
             return 1;
         }
     }
+#endif
     if (len < 1) return 0;
     p = Mode->fColorize->Keywords.key[len];
     if (IgnCase) {
@@ -618,18 +607,15 @@ int EBuffer::GetHilitWord(int len, char *str, ChColor &clr, int IgnCase) {
 
         memcpy(s, str, len);
         s[len] = 0;
-#ifdef CONFIG_TAGS
         if (BFI(this, BFI_HilitTags)&&TagDefined(s)) {
 	    //clr = 0x0A;
 	    clr = CLR_HexNumber;// Mode->fColorize->Colors[];
             return 1;
         }
-#endif
     }
     
     return 0;
 }
-#endif
 
 EEditPort *EBuffer::GetViewVPort(EView *V) {
     return (EEditPort *)V->Port;

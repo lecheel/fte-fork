@@ -171,7 +171,6 @@ mode SIOD: PLAIN {      # siod Mode
     SaveFolds           = 2;      # save fold info at end of line
     CommentStart        = ' ;';
     CommentEnd          = '';
-    CommentPat          = ';';
 
     WordChars           = '-A-Za-z0-9*%:?!>';  #first noticed in m_plain.fte
 

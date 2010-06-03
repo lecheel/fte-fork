@@ -7,17 +7,10 @@ any of its derivitives.
 
 ********************************************************************/
 
-#include "feature.h"
-
-
-#ifdef CONFIG_LOGGING
-
 #include <time.h>
 #include <ctype.h>
 #include "sysdep.h"
-
 #include "log.h"
-GlobalLog globalLog;
 
 #if defined(NO_NEW_CPP_FEATURES)
 #include <iomanip.h>
@@ -29,6 +22,7 @@ GlobalLog globalLog;
 using namespace std;
 #endif
 
+#ifndef FTE_NO_LOGGING
 
 /*********************************************************************
  *
@@ -36,6 +30,7 @@ using namespace std;
  *
  *********************************************************************/
 
+GlobalLog globalLog;
 
 bool GlobalLog::OpenLogFile()
 {

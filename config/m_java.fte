@@ -64,5 +64,4 @@ mode JAVA: PLAIN {      # JAVA Mode
     SaveFolds           = 2;      # save fold info at end of line
     CommentStart        = ' /*';
     CommentEnd          = '*/';
-    CommentPat          = '//';
 }

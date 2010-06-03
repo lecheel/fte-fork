@@ -165,7 +165,6 @@ mode PHP: PLAIN {      # PHP Mode
     SaveFolds           = 2;      # save fold info at end of line
     CommentStart        = ' /*';
     CommentEnd          = '*/';
-    CommentPat          = ' ';
 
     RoutineRegexp       = '^{class}|{function}';
 }
