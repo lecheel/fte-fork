@@ -317,15 +317,11 @@ eventmap PLAIN: MODEL {
     key   [A+C]         { BlockMarkColumn }
     key   [A+D]         { KillLine }
     key   [A+G]         { MoveToLine }
-    #    key   [A+G]         { BlockSelectWord; BlockUnmark; CompileGrep "ggrep -n -i "}
     key   [C+F8]        { BlockSelectWord; BlockUnmark; vGrep ""} # force grep via vgrep
     key   [A+']         { BlockSelectWord; BlockUnmark; vGrep ""}
-#    key   [F11]         { BlockSelectWord; BlockUnmark; RunApp1 "vgrep --atags "; FileCheck "tag"; AtagOpen; MoveFileStart; FindRepeat; }
-#    key   [C+F11]       { PowerApp "vgrep --btags "; FileCheck "tag"; AtagBack; FileGrepLine;}
+    key   [F11]         { FileCheck "/tmp/fte.grp"; FileOpen "/tmp/fte.grp"; ChangeToReadOnly }
     key   [C+F7]        { Whereis "" }
     key   [C+']         { Whereis "" }
-    key   [A+F7]        { FileCheck "c:\\fte.dir"; FileOpen "c:\\fte.dir"; ChangeToReadOnly }
-    key   [F11]         { FileCheck "c:\\fte.grp"; FileOpen "c:\\fte.grp"; ChangeToReadOnly }
     key   [F8]          { LineIndent; MoveDown; }
     key   [C+J]         { MoveToLine }
     key   [A+I]         { ToggleInsert }

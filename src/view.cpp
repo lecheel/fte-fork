@@ -434,9 +434,9 @@ int EView::FileCheck(ExState &State) {
     char FName[MAXPATH];
     FILE *in;
     if (State.GetStrParam(this, FName, sizeof(FName)) != 0) {
-        if (!strcmp(FName,"tag")) sprintf(FName,"%s\\ve.dat",GetTmpDir());
+        if (!strcmp(FName,"tag")) sprintf(FName,"%s/ve.dat",GetTmpDir());
         if (( in = fopen(FName,"rb"))==NULL) {
-               Msg(S_INFO,"Context history not founded.");
+               Msg(S_INFO,"Context history not found.");
                return 0;
             }
         fclose(in);
@@ -791,39 +791,14 @@ int EView::Grep(ExState &State) { // lechee
 int EView::vGrep(ExState &State) { // lechee
     static char Cmd[256] = "";
     char Command[256] = "";
-    char SPath[256] = "";
-    char BMask[256] = "*.asm *.inc";
-    char DoCmd[512] = "";
-    char *B,*BD;
+    char Dir[MAXPATH] = "";
+    char DoCmd[1024] = "";
 
-
-    if (strlen(VMASK)) {
-       strcpy(BMask,VMASK);
-    } else {
-    B = getenv("bmask");
-      if (B != NULL) {
-          strcpy(BMask,B);
-          }
-}
-
-    if (strlen(VDIR)) {
-       strcpy(SPath,VDIR);
-    } else {
-       BD = getenv("bhome");
-       if (BD != NULL) {
-           strcpy(SPath,BD);
-//           if (BiosHome) RTrimS(SPath,SLASH);
-       } else {
-          BD = getenv("tagfile");
-          if (BD != NULL) {
-              strcpy(SPath,BD);
-          }
-    }
-    }
     if (CompilerMsgs != 0 && CompilerMsgs->Running) {
         Msg(S_INFO, "Already running...");
         return 0;
     }
+    
     // Get String Parameter from CNF as command parameter
     if (State.GetStrParam(this, Command, sizeof(Command)) == 0) {
         if (Model->GetContext() == CONTEXT_FILE) {
@@ -834,27 +809,52 @@ int EView::vGrep(ExState &State) { // lechee
         if (Cmd[0] == 0)
             strcpy(Cmd, CompileCommand);
 
+        // Pre-fill with word under cursor if empty
+        if (strlen(Command) == 0 && Model->GetContext() == CONTEXT_FILE) {
+            EBuffer *B = (EBuffer *)Model;
+            B->GetStrVar(mvWord, Command, sizeof(Command));
+        }
+
         if (MView->Win->GetStr("vGrep", sizeof(Cmd), Cmd, HIST_GREP) == 0) return 0;
         strcpy(Command, Cmd);
     } else {
-
-        if (strlen(SearchPattern)!=0) {   
-             strcat(Command,SearchPattern);
-             }
+        if (strlen(SearchPattern) != 0) {
+            strcat(Command, SearchPattern);
+        }
+        // Pre-fill with word under cursor if still empty
+        if (strlen(Command) == 0 && Model->GetContext() == CONTEXT_FILE) {
+            EBuffer *B = (EBuffer *)Model;
+            B->GetStrVar(mvWord, Command, sizeof(Command));
+        }
         if (MView->Win->GetStr("vGrep", sizeof(Command), Command, HIST_GREP) == 0) return 0;
-        if (strlen(Command)==0) return 0;
-        if (MView->Win->GetStr("Dir", sizeof(SPath), SPath, HIST_GREPPATH) == 0) return 0;
-        if (SPath[strlen(SPath)-1]=='\\') SPath[strlen(SPath)-1]='\0';
-#if defined(MSVC)
-        if ((!strcmp(SPath,"."))||(strlen(SPath)==0)) GetCurrentDirectory(sizeof(SPath),SPath);
-#endif
-        if (MView->Win->GetStr("Mask",sizeof(BMask), BMask, HIST_BMASK) == 0) return 0;
-        if (strlen(BMask)==0) strcpy(BMask,"*.*");
-        Msg(S_INFO,"vGrep in Progress ........");
+        if (strlen(Command) == 0) return 0;
     }
-        sprintf(DoCmd,"vgrep --grep %s \"%s\" \"%s\"",Command,SPath,BMask);
-        strcpy(VDIR,SPath);
-        strcpy(VMASK,BMask);
+
+    if (GetDefaultDirectory(Model, Dir, sizeof(Dir)) == 0)
+        return 0;
+
+    Msg(S_INFO, "vGrep in Progress ........");
+
+    // Escape double quotes in Command to prevent shell injection/errors
+    char safeCmd[256];
+    int j = 0;
+    for (int i = 0; Command[i] && j < 254; i++) {
+        if (Command[i] == '"') {
+            safeCmd[j++] = '\\';
+            safeCmd[j++] = '"';
+        } else {
+            safeCmd[j++] = Command[i];
+        }
+    }
+    safeCmd[j] = 0;
+
+    // Find git top-level root and run rg from there. 
+    // If git fails (e.g., not a git repo), fall back to the current directory.
+    // Use "--color never" instead of "--no-color" which is a grep flag, not an rg flag.
+    snprintf(DoCmd, sizeof(DoCmd),
+             "sh -c 'R=$(git -C \"$1\" rev-parse --show-toplevel 2>/dev/null); if [ -z \"$R\" ]; then R=\"$1\"; fi; rg -n --no-heading --color never \"$2\" \"$R\" > /tmp/fte.grp' -- \"%s\" \"%s\"",
+             Dir, safeCmd);
+
     return Grep(DoCmd);
 }
 

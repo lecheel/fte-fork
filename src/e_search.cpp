@@ -732,81 +732,88 @@ char *find_extension(char *s)
 }
 
 
-int EBuffer::CompleteGrep() {  // it should only work via Semware GREP 2.0
+int EBuffer::CompleteGrep() {
     char cmdStr[512];
-    char *pp,*qq;
     PELine L = VLine(CP.Row);
-    int MaxCnt,cnt,CurrLine,line;
-    int GotInfo=0;
-    GrepName[0]=0;
-    GrepLine=0;
-    strcpy(cmdStr,FileName);
-    GetStrVar(mvFileExtension,cmdStr,1);
-    Msg(S_INFO,"GRP Founded");
-    if (!stricmp(cmdStr,".GRP")) {
-        int LLen = L->Count;
-        if (LLen >= 512) LLen = 511;
-        memcpy(cmdStr, L->Chars, LLen);
-        cmdStr[LLen] = 0;
-        
-        pp=strstr(cmdStr,": ");
-        if (pp==NULL) {
-          pp=strstr(cmdStr,":\t");
-        }
-        if (pp!=NULL) {    // Line Number found in GREP
-             cnt = 0;
-             while (cmdStr[cnt]!=':' && cmdStr[cnt] != 0) cnt++;
-             cmdStr[cnt]=0;
-             GrepLine = atoi(cmdStr);
-             CurrLine = VToR(CP.Row) + 1;     // Current Line number
-    	     for (line = CurrLine-1; line>=0; line--) {
-               L = RLine(line);
-               LLen = L->Count;
-               if (LLen >= 512) LLen = 511;
-               memcpy(cmdStr, L->Chars, LLen);
-               cmdStr[LLen] = 0;
-               cmdStr[5]=0;
-               if (!strcmp(cmdStr,"File:")) {
-                  LLen = L->Count;
-                  if (LLen >= 512) LLen = 511;
-                  memcpy(cmdStr, L->Chars, LLen);
-                  cmdStr[LLen] = 0;
-                  cnt=0;
-                  MaxCnt=strlen(cmdStr);
-                  while (cmdStr[cnt]!=0x0D && cnt<MaxCnt) cnt++;
-                  cmdStr[cnt]=0;
-                  qq = cmdStr;
-                  memmove(cmdStr, qq+6, strlen(qq+6) + 1);
-                  GotInfo = 1;
-                  strcpy(GrepName,cmdStr);
-                  break;
-               }
-             }
-        }
-    } else {
-       if (!stricmp(cmdStr,".DIR")) {
-         CurrLine = VToR(CP.Row);     // Current Line number
-         L=RLine(CurrLine);
-        if (L->Chars != NULL) {
-            int LLen = L->Count;
-            if (LLen >= 512) LLen = 511;
-            memcpy(cmdStr, L->Chars, LLen);
-            cmdStr[LLen] = 0;
+    int GotInfo = 0;
+    GrepName[0] = 0;
+    GrepLine = 0;
 
-            cnt=0;
-            MaxCnt=strlen(cmdStr);
-            if (MaxCnt>3) {
-                while (cmdStr[cnt]!=0x0D && cnt<MaxCnt) cnt++;
-                cmdStr[cnt]=0;
-                GotInfo=1;
-            } else {
-                cmdStr[0]=0;	// ERROR
+    int LLen = L->Count;
+    if (LLen >= 512) LLen = 511;
+    memcpy(cmdStr, L->Chars, LLen);
+    cmdStr[LLen] = 0;
+
+    // Trim leading whitespace
+    char *start = cmdStr;
+    while (*start == ' ' || *start == '\t') start++;
+
+    // Trim trailing \r
+    char *cr = strchr(start, '\r');
+    if (cr) *cr = 0;
+
+    // Try to parse standard format (rg, grep -n): filename:line:content
+    char *p1 = strchr(start, ':');
+    if (p1) {
+        char *p2 = strchr(p1 + 1, ':');
+        if (p2) {
+            *p2 = 0;
+            GrepLine = atoi(p1 + 1);
+            if (GrepLine > 0) {
+                *p1 = 0;
+                strlcpy(GrepName, start, sizeof(GrepName));
+                GotInfo = 1;
             }
-            strcpy(GrepName,cmdStr);
         }
-       } else {
-       Msg(S_INFO," ... only effect in Grep Index File ...");
-       }
+    }
+
+    if (!GotInfo) {
+        // Fallback to old vgrep format: "File: filename"
+        if (strncmp(start, "File:", 5) == 0) {
+            char *fn = start + 5;
+            while (*fn == ' ' || *fn == '\t') fn++;
+            strlcpy(GrepName, fn, sizeof(GrepName));
+            GotInfo = 1; 
+        } else {
+            // Fallback to old vgrep line format: "line: content"
+            char *p = strstr(start, ": ");
+            if (!p) p = strstr(start, ":\t");
+            if (p) {
+                *p = 0;
+                GrepLine = atoi(start);
+                if (GrepLine > 0) {
+                    int CurrLine = VToR(CP.Row);
+                    for (int line = CurrLine - 1; line >= 0; line--) {
+                        L = RLine(line);
+                        LLen = L->Count;
+                        if (LLen >= 512) LLen = 511;
+                        memcpy(cmdStr, L->Chars, LLen);
+                        cmdStr[LLen] = 0;
+                        if (!strncmp(cmdStr, "File:", 5)) {
+                            char *fn = cmdStr + 5;
+                            while (*fn == ' ' || *fn == '\t') fn++;
+                            cr = strchr(fn, '\r');
+                            if (cr) *cr = 0;
+                            strlcpy(GrepName, fn, sizeof(GrepName));
+                            GotInfo = 1;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (!GotInfo) {
+        // If no line number found, maybe it's just a file path (e.g., from Whereis)
+        if (strlen(start) > 0 && !strchr(start, ' ')) {
+            strlcpy(GrepName, start, sizeof(GrepName));
+            GotInfo = 1;
+        }
+    }
+
+    if (!GotInfo) {
+        Msg(S_INFO, " ... only effect in Grep Index File ...");
     }
     return (GotInfo);
 }

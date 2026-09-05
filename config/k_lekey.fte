@@ -227,7 +227,7 @@ eventmap PLAIN: MODEL {
     
 #    key   [A+']      { Compile "grep -n " }
     key   [A+']      { BlockSelectWord; BlockUnmark; vGrep ""} 
-    key   [F11]      { FileCheck "fte.grp"; FileOpen "fte.grp"; ChangeToReadOnly }
+    key   [F11]      { FileCheck "/tmp/fte.grp"; FileOpen "/tmp/fte.grp"; ChangeToReadOnly }
     key   [F12]      { InsertTab }
     key   [F4]       { ShowMenu 'MExtra' }    
     key   [A+=]      { InsertAdupChar }
