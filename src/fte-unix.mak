@@ -36,7 +36,7 @@ APPOPTIONS = -DDEFAULT_INTERNAL_CONFIG
 
 #gcc/g++
 COPTIONS = -Wall -Wpointer-arith -Wconversion -Wwrite-strings \
-           -Winline
+           -Winline -Wno-narrowing
 
 #CC       = g++
 #LD       = g++
