@@ -1893,8 +1893,8 @@ int EBuffer::UpdateGitStatus() {
     int use_tmp = 0;
 
     if (Modified) {
-        sprintf(cur_tmp, "%s.fte_cur_tmp", FileName);
-        sprintf(base_tmp, "%s.fte_base_tmp", FileName);
+        sprintf(cur_tmp, "/tmp/fte_cur_%ld.tmp", (long)getpid());
+        sprintf(base_tmp, "/tmp/fte_base_%ld.tmp", (long)getpid());
 
         FILE *f_cur = fopen(cur_tmp, "w");
         if (f_cur) {
@@ -1906,15 +1906,15 @@ int EBuffer::UpdateGitStatus() {
             }
             fclose(f_cur);
 
-            sprintf(cmd, "git -C \"%s\" show \"HEAD:$(git -C \"%s\" rev-parse --show-prefix)%s\" > \"%s\" 2>/dev/null", dir, dir, name, base_tmp);
-            if (system(cmd) == 0) {
-                sprintf(cmd, "git diff --no-index --no-color -U0 \"%s\" \"%s\"", base_tmp, cur_tmp);
-                fp = popen(cmd, "r");
-                use_tmp = 1;
-            } else {
-                unlink(cur_tmp);
-                unlink(base_tmp);
+            sprintf(cmd, "sh -c 'R=$(git -C \"$1\" rev-parse --show-toplevel 2>/dev/null) && F=$(git -C \"$1\" ls-files --full-name \"$2\" 2>/dev/null) && git -C \"$R\" show \"HEAD:$F\" > \"$3\"' -- \"%s\" \"%s\" \"%s\" 2>/dev/null", dir, name, base_tmp);
+            if (system(cmd) != 0) {
+                FILE *f_b = fopen(base_tmp, "w");
+                if (f_b) fclose(f_b);
             }
+
+            sprintf(cmd, "git diff --no-index --no-color -U0 \"%s\" \"%s\"", base_tmp, cur_tmp);
+            fp = popen(cmd, "r");
+            use_tmp = 1;
         }
     }
 

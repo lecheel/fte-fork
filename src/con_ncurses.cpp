@@ -640,9 +640,19 @@ int ConGetEvent(TEventMask /*EventMask */ ,
     rtn = WaitPipeEvent(Event, wait_ms, sfd, 1);
     if (rtn != 0) return rtn;
 
-    // WaitPipeEvent timed out (no key pressed on stdin within wait_ms)
-    if (wait_ms >= 0) {
-        CheckGitLiveUpdate();
+    // Check if stdin has data ready before trying to read
+    fd_set rfds;
+    struct timeval tv_poll;
+    FD_ZERO(&rfds);
+    FD_SET(STDIN_FILENO, &rfds);
+    tv_poll.tv_sec = 0;
+    tv_poll.tv_usec = 0;
+
+    int ready = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &tv_poll);
+    if (ready <= 0) {
+        // No character on stdin: WaitPipeEvent truly timed out
+        if (wait_ms >= 0)
+            CheckGitLiveUpdate();
         Event->What = evNone;
         return 0;
     }
