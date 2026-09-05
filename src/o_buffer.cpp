@@ -142,7 +142,6 @@ int EBuffer::GetContext() {
 }
 
 void EEditPort::HandleEvent(TEvent &Event) {
-    int oldModified = Buffer->Modified;
     EViewPort::HandleEvent(Event);
     switch (Event.What) {
     case evKeyDown:
@@ -166,6 +165,7 @@ void EEditPort::HandleEvent(TEvent &Event) {
                 if (Buffer->BeginMacro() == 0)
                     return ;
                 Buffer->TypeChar(Ch);
+                Buffer->MarkGitDirty();
                 Event.What = evNone;
             }
         }
@@ -237,16 +237,6 @@ void EEditPort::HandleEvent(TEvent &Event) {
         break;
     }
 
-    // If the buffer was modified by the command (which runs in Model->HandleEvent
-    // before this Port->HandleEvent), mark it git dirty to trigger the live update.
-    // This is safe from Use-After-Free because if the buffer was deleted (e.g. FileClose),
-    // this EEditPort is also deleted and this method would not be called.
-    if (Buffer->EnableGitGutter && !oldModified && Buffer->Modified) {
-        Buffer->GitDirty = 1;
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        Buffer->LastModifyTime = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
-    }
 }
 void EEditPort::HandleMouse(TEvent &Event) {
     int x, y, xx, yy, W, H;
@@ -1847,6 +1837,15 @@ int EBuffer::GetIntVar(int var, int *value) {
     case mvCurCol: *value = CP.Col; return 1;
     }
     return EModel::GetIntVar(var, value);
+}
+
+void EBuffer::MarkGitDirty() {
+    if (EnableGitGutter) {
+        GitDirty = 1;
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        LastModifyTime = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+    }
 }
 
 void EBuffer::FreeGitStatus() {

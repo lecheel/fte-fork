@@ -228,6 +228,7 @@ public:
     int ToggleGitGutter();
     int GitNextHunk();
     int GitPrevHunk();
+    void MarkGitDirty();
     
 #ifdef CONFIG_WORD_HILIT
     char **WordList;

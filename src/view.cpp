@@ -251,10 +251,38 @@ int EView::ExecCommand(int Command, ExState &State) {
 }
 
 void EView::HandleEvent(TEvent &Event) {
+    EModel *prevModel = Model;
+    int oldUndoPtr = -1, oldUndoTop = -1, oldRCount = -1, oldMod = -1;
+    if (prevModel && prevModel->GetContext() == CONTEXT_FILE) {
+        EBuffer *B = (EBuffer *)prevModel;
+#ifdef CONFIG_UNDOREDO
+        oldUndoPtr = B->US.UndoPtr;
+        if (B->US.Top && B->US.UndoPtr >= 0 && B->US.UndoPtr < B->US.Num)
+            oldUndoTop = B->US.Top[B->US.UndoPtr];
+#endif
+        oldRCount = B->RCount;
+        oldMod = B->Modified;
+    }
+
     if (Model)
         Model->HandleEvent(Event);
     if (Port)
         Port->HandleEvent(Event);
+
+    if (Model && Model == prevModel && Model->GetContext() == CONTEXT_FILE) {
+        EBuffer *B = (EBuffer *)Model;
+        int changed = 0;
+#ifdef CONFIG_UNDOREDO
+        int newUndoTop = (B->US.Top && B->US.UndoPtr >= 0 && B->US.UndoPtr < B->US.Num) ? B->US.Top[B->US.UndoPtr] : -1;
+        if (B->US.UndoPtr != oldUndoPtr || newUndoTop != oldUndoTop)
+            changed = 1;
+#endif
+        if (B->RCount != oldRCount || B->Modified != oldMod)
+            changed = 1;
+        if (changed)
+            B->MarkGitDirty();
+    }
+
     if (Event.What == evCommand) {
         switch (Event.Msg.Command) {
         case cmDroppedFile:
