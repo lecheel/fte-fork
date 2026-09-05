@@ -733,6 +733,9 @@ char *find_extension(char *s)
 
 
 int EBuffer::CompleteGrep() {
+    if (!FileName || strstr(FileName, "/tmp/fte.grp") == NULL)
+        return 0;
+
     char cmdStr[512];
     PELine L = VLine(CP.Row);
     int GotInfo = 0;

@@ -432,6 +432,12 @@ int EView::EnterGrep(ExState &/*State*/) {
     if (M == 0 || M->GetContext() != CONTEXT_FILE) return 0;
     EBuffer *B = (EBuffer *)M;
 
+    // Enter is bound to EnterGrep in the PLAIN keymaps, so in any buffer
+    // other than the grep index file it must fall back to the normal Enter
+    // behavior (open a new line) instead of silently doing nothing.
+    if (!B->FileName || strstr(B->FileName, "/tmp/fte.grp") == NULL)
+        return B->LineNew();
+
     // Parse the current line to populate GrepName and GrepLine
     if (B->CompleteGrep() == 0) return 0;
 

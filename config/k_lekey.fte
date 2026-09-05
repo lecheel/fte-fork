@@ -191,7 +191,6 @@ eventmap PLAIN: MODEL {
     key     [G++]       { BlockCopy; BlockUnmark }
     key     [C+C]       { BlockCopy; BlockUnmark }
     key     [C+V]       { BlockPasteStream; BlockUnmark }
-    key     [C+P]       { BlockPasteColumn; BlockUnmark }
     key     [C+X]       { BlockCut }
     key       [Tab]     { InsertTab }
     key     [S+Tab]     { InsertSpacesToTab 10 }
