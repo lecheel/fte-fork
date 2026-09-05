@@ -15,6 +15,9 @@
 #include "console.h"
 #include "gui.h"
 
+extern int GetGitWaitTimeout();
+extern void CheckGitLiveUpdate();
+
 /* Escape sequence delay in milliseconds */
 #define escDelay 10
 
@@ -630,9 +633,14 @@ int ConGetEvent(TEventMask /*EventMask */ ,
         return 1;
     }
 
+    int wait_ms = GetGitWaitTimeout();
+
     sfd[0] = STDIN_FILENO;
 
-    if((rtn=WaitPipeEvent(Event,-1, sfd, 1)) != 0) return rtn;
+    if ((rtn = WaitPipeEvent(Event, wait_ms, sfd, 1)) != 0) return rtn;
+
+    if (wait_ms > 0)
+        CheckGitLiveUpdate();
 
 	int ch = wgetch(stdscr);
 	Event->What = evKeyDown;

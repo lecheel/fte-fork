@@ -8,6 +8,7 @@
  */
 
 #include "fte.h"
+#include <sys/time.h>
 
 SearchReplaceOptions LSearch = { 0 };
 int suspendLoads = 0;
@@ -20,6 +21,8 @@ EViewPort *EBuffer::CreateViewPort(EView *V) {
         GitStatus = 0;
         GitStatusCount = 0;
         EnableGitGutter = 1;
+        GitDirty = 0;
+        LastModifyTime = 0;
 
         Load();
         UpdateGitStatus();
@@ -146,12 +149,12 @@ void EEditPort::HandleEvent(TEvent &Event) {
             TKeyCode code = Event.Key.Code;
             int baseKey = keyCode(code);
             int asciiCode = (int)(code & 0xFF);
-            if ((isCtrl(code) && (baseKey == 'l' || baseKey == 'L')) || asciiCode == 12) {
+            if (((keyType(code) == kfCtrl || (code & kfCtrl)) && (baseKey == 'l' || baseKey == 'L')) || asciiCode == 12) {
                 Buffer->GitNextHunk();
                 Event.What = evNone;
                 return ;
             }
-            if ((isCtrl(code) && (baseKey == 'p' || baseKey == 'P')) || asciiCode == 16) {
+            if (((keyType(code) == kfCtrl || (code & kfCtrl)) && (baseKey == 'p' || baseKey == 'P')) || asciiCode == 16) {
                 Buffer->GitPrevHunk();
                 Event.What = evNone;
                 return ;
@@ -162,6 +165,10 @@ void EEditPort::HandleEvent(TEvent &Event) {
                 if (Buffer->BeginMacro() == 0)
                     return ;
                 Buffer->TypeChar(Ch);
+                Buffer->GitDirty = 1;
+                struct timeval tv;
+                gettimeofday(&tv, NULL);
+                Buffer->LastModifyTime = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
                 Event.What = evNone;
             }
         }
@@ -1964,6 +1971,7 @@ int EBuffer::UpdateGitStatus() {
         unlink(cur_tmp);
         unlink(base_tmp);
     }
+    GitDirty = 0;
     FullRedraw();
     return 1;
 }
@@ -1994,6 +2002,41 @@ int EBuffer::GitNextHunk() {
     SetNearPosR(CP.Col, r);
     Msg(S_INFO, "Git hunk at line %d", r + 1);
     return 1;
+}
+
+void CheckGitLiveUpdate() {
+    if (ActiveModel && ActiveModel->GetContext() == CONTEXT_FILE) {
+        EBuffer *B = (EBuffer *)ActiveModel;
+        if (B->EnableGitGutter && B->GitDirty) {
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+            unsigned long now = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+            if (now - B->LastModifyTime >= 400) {
+                B->UpdateGitStatus();
+                B->GitDirty = 0;
+            }
+        }
+    }
+}
+
+int GetGitWaitTimeout() {
+    if (ActiveModel && ActiveModel->GetContext() == CONTEXT_FILE) {
+        EBuffer *B = (EBuffer *)ActiveModel;
+        if (B->EnableGitGutter && B->GitDirty) {
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+            unsigned long now = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+            unsigned long elapsed = now - B->LastModifyTime;
+            if (elapsed >= 400) {
+                B->UpdateGitStatus();
+                B->GitDirty = 0;
+                return 0;
+            } else {
+                return (int)(400 - elapsed);
+            }
+        }
+    }
+    return -1;
 }
 
 int EBuffer::GitPrevHunk() {

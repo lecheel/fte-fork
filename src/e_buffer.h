@@ -219,6 +219,8 @@ public:
     char *GitStatus;
     int GitStatusCount;
     int EnableGitGutter;
+    int GitDirty;
+    unsigned long LastModifyTime;
 
     void FreeGitStatus();
     int UpdateGitStatus();
