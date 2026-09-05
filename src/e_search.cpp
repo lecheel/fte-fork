@@ -775,9 +775,8 @@ int EBuffer::CompleteGrep() {
             strlcpy(GrepName, fn, sizeof(GrepName));
             GotInfo = 1; 
         } else {
-            // Fallback to old vgrep line format: "line: content"
-            char *p = strstr(start, ": ");
-            if (!p) p = strstr(start, ":\t");
+            // Fallback to old vgrep line format: "line: content" (also handles rg grouped mode)
+            char *p = strchr(start, ':');
             if (p) {
                 *p = 0;
                 GrepLine = atoi(start);
@@ -789,17 +788,32 @@ int EBuffer::CompleteGrep() {
                         if (LLen >= 512) LLen = 511;
                         memcpy(cmdStr, L->Chars, LLen);
                         cmdStr[LLen] = 0;
+                        cr = strchr(cmdStr, '\r');
+                        if (cr) *cr = 0;
+                        
+                        // Old vgrep "File: filename" format
                         if (!strncmp(cmdStr, "File:", 5)) {
                             char *fn = cmdStr + 5;
                             while (*fn == ' ' || *fn == '\t') fn++;
-                            cr = strchr(fn, '\r');
-                            if (cr) *cr = 0;
                             strlcpy(GrepName, fn, sizeof(GrepName));
                             GotInfo = 1;
                             break;
                         }
+                        
+                        // rg grouped mode: filename is on a line with no colons
+                        char *col = strchr(cmdStr, ':');
+                        if (!col) {
+                            char *fn = cmdStr;
+                            while (*fn == ' ' || *fn == '\t') fn++;
+                            if (strlen(fn) > 0) {
+                                strlcpy(GrepName, fn, sizeof(GrepName));
+                                GotInfo = 1;
+                                break;
+                            }
+                        }
                     }
                 }
+                *p = ':'; // restore
             }
         }
     }

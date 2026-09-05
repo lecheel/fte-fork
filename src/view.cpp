@@ -851,8 +851,9 @@ int EView::vGrep(ExState &State) { // lechee
     // Find git top-level root and run rg from there. 
     // If git fails (e.g., not a git repo), fall back to the current directory.
     // Use "--color never" instead of "--no-color" which is a grep flag, not an rg flag.
+    // Omit --no-heading to use rg's default grouped mode for better UX.
     snprintf(DoCmd, sizeof(DoCmd),
-             "sh -c 'R=$(git -C \"$1\" rev-parse --show-toplevel 2>/dev/null); if [ -z \"$R\" ]; then R=\"$1\"; fi; rg -n --no-heading --color never \"$2\" \"$R\" > /tmp/fte.grp' -- \"%s\" \"%s\"",
+             "sh -c 'R=$(git -C \"$1\" rev-parse --show-toplevel 2>/dev/null); if [ -z \"$R\" ]; then R=\"$1\"; fi; rg -n --color never \"$2\" \"$R\" > /tmp/fte.grp' -- \"%s\" \"%s\"",
              Dir, safeCmd);
 
     return Grep(DoCmd);
