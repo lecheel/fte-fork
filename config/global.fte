@@ -75,9 +75,6 @@ object GLOBAL {
     # to the right of the '('.
     FunctionUsesContinuation = 0;
     
-    REXX_Indent         = 4;
-#    REXX_Do_Offset      = 0;
-
 # grep -n
     CompileRx = { 1, 2, 3, /^([\w:._\-\+\/\\]#):(\d+):/ };
 # GCC
