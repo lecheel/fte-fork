@@ -565,6 +565,9 @@ public:
     int     BackSpace();
     int     Delete();
     int     CompleteWord();
+    int     CompleteWordNext();
+    int     CompleteWordPrev();
+    int     WordCompleteActive();
     int     CompleteGrep();
     int     KillBlockOrChar();
     int     KillBlockOrCharPrev();

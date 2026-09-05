@@ -836,69 +836,215 @@ int EBuffer::CompleteGrep() {
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Word completion with cycling:
+//   Alt+/ (or Ctrl+Tab) starts a completion session,
+//   Tab cycles to the next candidate, Shift+Tab to the previous candidate.
+// The session ends as soon as the cursor leaves the completed word.
+/////////////////////////////////////////////////////////////////////////////
+
+#define CW_MAXWORD 128
+
+typedef struct {
+    EBuffer *B;      /* buffer which owns the session */
+    char *Prefix;    /* word prefix typed by the user */
+    char **Words;    /* unique candidate words */
+    int Count;       /* number of candidates */
+    int Index;       /* currently selected candidate */
+    int InsLen;      /* length of the currently inserted tail */
+    int Row;         /* row of the completed word (visual) */
+    int Col;         /* screen column where the word starts */
+} CWState;
+
+static CWState CW = { 0, 0, 0, 0, 0, 0, 0, 0 };
+
+static void CWFree() {
+    int i;
+
+    for (i = 0; i < CW.Count; i++)
+        free(CW.Words[i]);
+    if (CW.Words) free(CW.Words);
+    if (CW.Prefix) free(CW.Prefix);
+    memset(&CW, 0, sizeof(CW));
+}
+
+static int CWCompare(const void *a, const void *b) {
+    return strcmp(*(char **)a, *(char **)b);
+}
+
+static int CWInsertCurrent(EBuffer *B) {
+    char *word = CW.Words[CW.Index];
+    int plen = strlen(CW.Prefix);
+    int tailLen = strlen(word) - plen;
+
+    if (tailLen > 0)
+        if (B->InsText(B->VToR(CW.Row), CW.Col + plen, tailLen, word + plen) == 0)
+            return 0;
+    CW.InsLen = tailLen;
+    if (B->SetPos(CW.Col + plen + tailLen, CW.Row) == 0)
+        return 0;
+    return 1;
+}
+
+int EBuffer::WordCompleteActive() {
+    int plen, P;
+    PELine L;
+
+    if (CW.B != this || CW.Count <= 0 || CW.Prefix == 0)
+        return 0;
+    if (CP.Row != CW.Row)
+        return 0;
+    plen = strlen(CW.Prefix);
+    if (CP.Col != CW.Col + plen + CW.InsLen)
+        return 0;
+    L = VLine(CP.Row);
+    P = CharOffset(L, CW.Col);
+    if (P + plen + CW.InsLen > L->Count)
+        return 0;
+    if (memcmp(L->Chars + P, CW.Prefix, plen) != 0)
+        return 0;
+    return 1;
+}
+
+int EBuffer::CompleteWordNext() {
+    if (WordCompleteActive() == 0)
+        return 0;
+    if (CW.InsLen > 0)
+        if (DelText(VToR(CW.Row), CW.Col + strlen(CW.Prefix), CW.InsLen) == 0) {
+            CWFree();
+            return 0;
+        }
+    CW.Index = (CW.Index + 1) % CW.Count;
+    if (CWInsertCurrent(this) == 0) {
+        CWFree();
+        return 0;
+    }
+    Msg(S_INFO, "Complete %d/%d: %s", CW.Index + 1, CW.Count, CW.Words[CW.Index]);
+    return 1;
+}
+
+int EBuffer::CompleteWordPrev() {
+    if (WordCompleteActive() == 0)
+        return 0;
+    if (CW.InsLen > 0)
+        if (DelText(VToR(CW.Row), CW.Col + strlen(CW.Prefix), CW.InsLen) == 0) {
+            CWFree();
+            return 0;
+        }
+    CW.Index = (CW.Index - 1 + CW.Count) % CW.Count;
+    if (CWInsertCurrent(this) == 0) {
+        CWFree();
+        return 0;
+    }
+    Msg(S_INFO, "Complete %d/%d: %s", CW.Index + 1, CW.Count, CW.Words[CW.Index]);
+    return 1;
+}
+
 int EBuffer::CompleteWord() {
-#ifdef CONFIG_I_COMPLETE
-    return View->MView->Win->ICompleteWord(View);
-#else
-    PELine L = VLine(CP.Row), M;
-    int C, P, X, P1, N, xlen, XL;
-    EPoint O = CP;
+    char prefix[CW_MAXWORD];
+    char word[CW_MAXWORD];
+    PELine L;
+    int P, P1, Q, plen, wlen, i, j, row, cnt, alloc;
 
-    if (CP.Col == 0) return 0;
+    CWFree();
 
+    if (CP.Col == 0) {
+        Msg(S_INFO, "Nothing to complete.");
+        return 0;
+    }
     if (SetPos(CP.Col, CP.Row) == 0) return 0;
 
-    C = CP.Col;
-    P = CharOffset(L, C);
-    P1 = P;
-    N = VToR(CP.Row);
+    L = VLine(CP.Row);
+    P1 = CharOffset(L, CP.Col);
+    if (P1 > L->Count) return 0;
+    P = P1;
+    while (P > 0 && (ChClass(L->Chars[P - 1]) == 1 || L->Chars[P - 1] == '_'))
+        P--;
+    plen = P1 - P;
+    if (plen <= 0 || plen >= CW_MAXWORD) {
+        Msg(S_INFO, "Nothing to complete.");
+        return 0;
+    }
+    memcpy(prefix, L->Chars + P, plen);
+    prefix[plen] = 0;
 
-    if (P > L->Count) return 0;
-
-    if (P > 0) {
-        while ((P > 0) && ((ChClass(L->Chars[P - 1]) == 1) || (L->Chars[P - 1] == '_'))) P--;
-        if (P == P1) return 0;
-        xlen = P1 - P;
-        C = ScreenPos(L, P);
-        Match.Row = N;
-        Match.Col = C;
-        //if (SetPos(C, CP.Row) == 0) return 0;
-        //again:
-        if (FindStr(L->Chars + P, xlen, SEARCH_BACK | SEARCH_NEXT | SEARCH_NOPOS | SEARCH_WORDBEG) == 1) {
-            M = RLine(Match.Row);
-            X = CharOffset(M, Match.Col);
-            XL = X;
-            //if ((XL > 0) && ((ChClass(M->Chars[XL - 1]) == 1) || (M->Chars[XL - 1] == '_'))) goto again;
-            while ((XL < M->Count) && ((ChClass(M->Chars[XL]) == 1) || (M->Chars[XL] == '_'))) XL++;
-            {
-                char *pp = (char *)malloc(XL - X - xlen);
-
-                if (pp) {
-                    memcpy(pp, M->Chars + X + xlen, XL - X - xlen);
-
-                    if (InsText(N, O.Col,
-                                XL - X - xlen,
-                                pp,
-                                1) == 0) return 0;
-                    free(pp);
+    /* collect all words which extend the prefix */
+    CW.Words = 0;
+    CW.Count = 0;
+    alloc = 0;
+    for (row = 0; row < RCount; row++) {
+        L = RLine(row);
+        i = 0;
+        while (i < L->Count) {
+            if (ChClass(L->Chars[i]) == 1 || L->Chars[i] == '_') {
+                j = i;
+                while (i < L->Count && (ChClass(L->Chars[i]) == 1 || L->Chars[i] == '_'))
+                    i++;
+                wlen = i - j;
+                if (wlen > plen && wlen < CW_MAXWORD &&
+                    memcmp(L->Chars + j, prefix, plen) == 0)
+                {
+                    memcpy(word, L->Chars + j, wlen);
+                    word[wlen] = 0;
+                    if (CW.Count == alloc) {
+                        alloc = alloc ? alloc * 2 : 64;
+                        CW.Words = (char **)realloc(CW.Words, sizeof(char *) * alloc);
+                        if (CW.Words == 0) {
+                            CWFree();
+                            return 0;
+                        }
+                    }
+                    CW.Words[CW.Count] = strdup(word);
+                    if (CW.Words[CW.Count] == 0) {
+                        CWFree();
+                        return 0;
+                    }
+                    CW.Count++;
                 }
-            }
-            if (SetPos(O.Col + XL - X - xlen, O.Row) == 0) return 0;
-            Draw(Match.Row, Match.Row);
-            Match.Row = -1;
-            Match.Col = -1;
-            MatchLen = 0;
-            MatchCount = 0;
-            return 1;
+            } else
+                i++;
         }
     }
-    if (Match.Row != -1)
-        Draw(Match.Row, Match.Row);
-    Match.Col = Match.Row = -1;
-    MatchLen = 0;
-    MatchCount = 0;
-    return 0;
-#endif
+    if (CW.Count == 0) {
+        CWFree();
+        Msg(S_INFO, "No completions for '%s'.", prefix);
+        return 0;
+    }
+    qsort(CW.Words, CW.Count, sizeof(char *), CWCompare);
+    /* remove duplicates */
+    cnt = 0;
+    for (i = 0; i < CW.Count; i++) {
+        if (cnt > 0 && strcmp(CW.Words[i], CW.Words[cnt - 1]) == 0)
+            free(CW.Words[i]);
+        else
+            CW.Words[cnt++] = CW.Words[i];
+    }
+    CW.Count = cnt;
+
+    /* if the cursor is inside a word, the rest of the word is replaced */
+    L = VLine(CP.Row);
+    P1 = CharOffset(L, CP.Col);
+    Q = P1;
+    while (Q < L->Count && (ChClass(L->Chars[Q]) == 1 || L->Chars[Q] == '_'))
+        Q++;
+    if (Q > P1)
+        if (DelText(VToR(CP.Row), CP.Col, Q - P1) == 0) {
+            CWFree();
+            return 0;
+        }
+
+    CW.B = this;
+    CW.Prefix = strdup(prefix);
+    CW.Index = 0;
+    CW.InsLen = 0;
+    CW.Row = CP.Row;
+    CW.Col = ScreenPos(VLine(CP.Row), P);
+    if (CWInsertCurrent(this) == 0) {
+        CWFree();
+        return 0;
+    }
+    Msg(S_INFO, "Complete %d/%d: %s (Tab next, Shift+Tab prev)", CW.Index + 1, CW.Count, CW.Words[CW.Index]);
+    return 1;
 }
 
 int EBuffer::Search(ExState &State, char *aString, int Options, int /*CanResume*/) {

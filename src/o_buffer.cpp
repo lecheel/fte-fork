@@ -480,11 +480,18 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
         {
             int no;
 
+            // Shift+Tab cycles to the previous word completion candidate
+            if (WordCompleteActive())
+                return CompleteWordPrev();
             if(State.GetIntParam(View, &no) == 0)
                 no = 0;
             return InsertSpacesToTab(no);
         }
-    case ExInsertTab:             return InsertTab();
+    case ExInsertTab:
+        // Tab cycles to the next word completion candidate (started with Alt+/)
+        if (WordCompleteActive())
+            return CompleteWordNext();
+        return InsertTab();
     case ExInsertSpace:           return InsertSpace();
     case ExWrapPara:
 #ifdef CONFIG_WORDWRAP
