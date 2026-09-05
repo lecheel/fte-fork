@@ -8,7 +8,6 @@
  */
 
 #include "fte.h"
-#include "o_cvsbase.h"
 #include "log.h"
 
 typedef struct _GUICharactersEntry {

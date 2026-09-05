@@ -1,8 +1,11 @@
 
 #define MAX_PIPES 4
 
+#include <poll.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "sysdep.h"
 #include "c_config.h"
@@ -28,62 +31,60 @@ static GPipe Pipes[MAX_PIPES] =
 };
 
 /* If command pipes are open, wait for input on them or
- * external file descriptors if  passed */
-int WaitPipeEvent(TEvent *Event,int WaitTime, int *fds, int nfds)
+ * external file descriptors if passed */
+int WaitPipeEvent(TEvent *Event, int WaitTime, int *fds, int nfds)
 {
-    fd_set readfds;
-    struct timeval timeout;
-    int have_pipes;
-    int i;
+    struct pollfd pfds[MAX_PIPES + 8];
+    int npfds = 0;
+    int pipe_idx[MAX_PIPES + 8];
+    int have_pipes = 0;
 
+    for (int p = 0; p < MAX_PIPES; p++) {
+        if (Pipes[p].used && Pipes[p].fd != -1) {
+            pfds[npfds].fd = Pipes[p].fd;
+            pfds[npfds].events = POLLIN;
+            pfds[npfds].revents = 0;
+            pipe_idx[npfds] = p;
+            npfds++;
+            have_pipes = 1;
+        }
+    }
+    if (!have_pipes) return 0;
 
-    FD_ZERO(&readfds);
-
-    have_pipes = 0;
-    for (int p = 0; p < MAX_PIPES; p++)
-	    if (Pipes[p].used && Pipes[p].fd != -1)
-	    {
-		    FD_SET(Pipes[p].fd, &readfds);
-                    have_pipes = 1;
-	    }
-    if(!have_pipes) return 0;
-
-    for(i=0; i<nfds; i++) { FD_SET(fds[i], &readfds);}
-
-    if (WaitTime == -1) {
-	if (select(sizeof(fd_set) * 8, &readfds, NULL, NULL, NULL) < 0)
-	    return -1;
-    } else {
-	timeout.tv_sec = WaitTime / 1000;
-	timeout.tv_usec = (WaitTime % 1000) * 1000;
-	if (select(sizeof(fd_set) * 8, &readfds, NULL, NULL, &timeout) < 0)
-	    return -1;
+    int ext_start = npfds;
+    for (int i = 0; i < nfds && npfds < (int)(sizeof(pfds)/sizeof(pfds[0])); i++) {
+        pfds[npfds].fd = fds[i];
+        pfds[npfds].events = POLLIN;
+        pfds[npfds].revents = 0;
+        pipe_idx[npfds] = -1;
+        npfds++;
     }
 
-    for(i=0; i<nfds; i++)
-    {
-	    if(FD_ISSET(fds[i], &readfds))
-	    {
-                    return 0;
-	    }
+    int rc = poll(pfds, npfds, WaitTime);
+    if (rc <= 0) return (rc < 0) ? -1 : 0;
+
+    for (int i = ext_start; i < npfds; i++) {
+        if (pfds[i].revents & (POLLIN | POLLERR | POLLHUP)) {
+            return 0;
+        }
     }
 
-	for (int pp = 0; pp < MAX_PIPES; pp++) {
-	    if (Pipes[pp].used && Pipes[pp].fd != -1 &&
-		FD_ISSET(Pipes[pp].fd, &readfds) &&
-		Pipes[pp].notify) {
-		Event->What = evNotify;
-		Event->Msg.View = 0;
-		Event->Msg.Model = Pipes[pp].notify;
-		Event->Msg.Command = cmPipeRead;
-		Event->Msg.Param1 = pp;
-		Pipes[pp].stopped = 0;
-		return 1;
-	    }
-	    //fprintf(stderr, "Pipe %d\n", Pipes[pp].fd);
-	}
-	return 0;
+    for (int i = 0; i < ext_start; i++) {
+        if (pfds[i].revents & (POLLIN | POLLERR | POLLHUP)) {
+            int pp = pipe_idx[i];
+            if (pp >= 0 && Pipes[pp].notify) {
+                Event->What = evNotify;
+                Event->Msg.View = 0;
+                Event->Msg.Model = Pipes[pp].notify;
+                Event->Msg.Command = cmPipeRead;
+                Event->Msg.Param1 = pp;
+                Pipes[pp].stopped = 0;
+                return 1;
+            }
+        }
     }
+    return 0;
+}
 
 
 
@@ -99,23 +100,39 @@ int GUI::OpenPipe(char *Command, EModel * notify)
 	    Pipes[i].notify = notify;
 	    Pipes[i].stopped = 1;
 
-	    if (pipe((int *) pfd) == -1)
-		return -1;
+#if defined(__linux__) && defined(O_CLOEXEC)
+	    if (pipe2(pfd, O_CLOEXEC | O_NONBLOCK) == -1)
+#endif
+	    {
+		if (pipe(pfd) == -1)
+		    return -1;
+		fcntl(pfd[0], F_SETFD, FD_CLOEXEC);
+		fcntl(pfd[1], F_SETFD, FD_CLOEXEC);
+		fcntl(pfd[0], F_SETFL, O_NONBLOCK);
+	    }
 
 	    switch (Pipes[i].pid = fork()) {
 	    case -1:		/* fail */
+		close(pfd[0]);
+		close(pfd[1]);
 		return -1;
 	    case 0:		/* child */
-		signal(SIGPIPE, SIG_DFL);
-		close(pfd[0]);
-		close(0);
-		dup2(pfd[1], 1);
-		dup2(pfd[1], 2);
-		close(pfd[1]);
-		exit(system(Command));
+		{
+		    struct sigaction sa;
+		    memset(&sa, 0, sizeof(sa));
+		    sa.sa_handler = SIG_DFL;
+		    sigaction(SIGPIPE, &sa, NULL);
+		    close(pfd[0]);
+		    close(0);
+		    int devnull = open("/dev/null", O_RDONLY);
+		    (void)devnull;
+		    dup2(pfd[1], 1);
+		    dup2(pfd[1], 2);
+		    close(pfd[1]);
+		    exit(system(Command));
+		}
 	    default:
 		close(pfd[1]);
-		fcntl(pfd[0], F_SETFL, O_NONBLOCK);
 		Pipes[i].fd = pfd[0];
 	    }
 	    Pipes[i].used = 1;

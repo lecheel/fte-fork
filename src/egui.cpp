@@ -663,8 +663,15 @@ int EGUI::findDesktop(char *argv[]) {
         if (FileExists(DESKTOP_NAME))
             ExpandPath(DESKTOP_NAME, DesktopFileName, sizeof(DesktopFileName));
         else {
-            //** Use homedir,
-            ExpandPath("~/" DESKTOP_NAME, DesktopFileName, sizeof(DesktopFileName));
+            const char *xdg_state = getenv("XDG_STATE_HOME");
+            if (xdg_state && *xdg_state) {
+                snprintf(DesktopFileName, sizeof(DesktopFileName), "%s/fte/%s", xdg_state, DESKTOP_NAME);
+            } else {
+                ExpandPath("~/.local/state/fte/" DESKTOP_NAME, DesktopFileName, sizeof(DesktopFileName));
+            }
+            if (!FileExists(DesktopFileName)) {
+                ExpandPath("~/" DESKTOP_NAME, DesktopFileName, sizeof(DesktopFileName));
+            }
         }
         return FileExists(DesktopFileName);
 
@@ -738,7 +745,15 @@ int EGUI::InterfaceInit(int &/*argc*/, char ** /*argv*/) {
 #ifdef CONFIG_HISTORY
 void EGUI::DoLoadHistoryOnEntry(int &/*argc*/, char ** /*argv*/) {
     if (HistoryFileName[0] == 0) {
-        ExpandPath("~/.fte-history", HistoryFileName, sizeof(HistoryFileName));
+        const char *xdg_state = getenv("XDG_STATE_HOME");
+        if (xdg_state && *xdg_state) {
+            snprintf(HistoryFileName, sizeof(HistoryFileName), "%s/fte/history", xdg_state);
+        } else {
+            ExpandPath("~/.local/state/fte/history", HistoryFileName, sizeof(HistoryFileName));
+        }
+        if (access(HistoryFileName, 0) != 0) {
+            ExpandPath("~/.fte-history", HistoryFileName, sizeof(HistoryFileName));
+        }
     } else {
         char p[256];
 
@@ -1044,13 +1059,6 @@ void EGUI::Stop() {
     {
         FreeCRegexp();
     }
-
-#ifdef CONFIG_OBJ_CVS
-    // free CvsIgnoreRegexp array from o_messages.cpp
-    {
-        FreeCvsIgnoreRegexp();
-    }
-#endif
 
     // free configuration file path
     {

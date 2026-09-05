@@ -31,9 +31,6 @@ EViewPort *EBuffer::CreateViewPort(EView *V) {
         if (CompilerMsgs)
             CompilerMsgs->FindFileErrors(this);
 #endif
-#ifdef CONFIG_OBJ_CVS
-        if (CvsDiffView) CvsDiffView->FindFileLines(this);
-#endif
 
         markIndex.retrieveForBuffer(this);
 
@@ -1901,18 +1898,28 @@ int EBuffer::UpdateGitStatus() {
     int use_tmp = 0;
 
     if (Modified) {
-        snprintf(cur_tmp, sizeof(cur_tmp), "/tmp/fte_cur_%ld.tmp", (long)getpid());
-        snprintf(base_tmp, sizeof(base_tmp), "/tmp/fte_base_%ld.tmp", (long)getpid());
+        const char *tmpdir = getenv("XDG_RUNTIME_DIR");
+        if (!tmpdir || !*tmpdir) tmpdir = "/tmp";
+        snprintf(cur_tmp, sizeof(cur_tmp), "%s/fte_cur_XXXXXX", tmpdir);
+        snprintf(base_tmp, sizeof(base_tmp), "%s/fte_base_XXXXXX", tmpdir);
 
-        FILE *f_cur = fopen(cur_tmp, "w");
-        if (f_cur) {
-            for (int i = 0; i < RCount; i++) {
-                PELine L = RLine(i);
-                if (L && L->Chars && L->Count > 0)
-                    fwrite(L->Chars, 1, L->Count, f_cur);
-                fputc('\n', f_cur);
+        int fd_cur = mkstemp(cur_tmp);
+        int fd_base = mkstemp(base_tmp);
+
+        if (fd_cur != -1 && fd_base != -1) {
+            FILE *f_cur = fdopen(fd_cur, "w");
+            if (f_cur) {
+                for (int i = 0; i < RCount; i++) {
+                    PELine L = RLine(i);
+                    if (L && L->Chars && L->Count > 0)
+                        fwrite(L->Chars, 1, L->Count, f_cur);
+                    fputc('\n', f_cur);
+                }
+                fclose(f_cur);
+            } else {
+                close(fd_cur);
             }
-            fclose(f_cur);
+            close(fd_base);
 
             snprintf(cmd, sizeof(cmd), "sh -c 'R=$(git -C \"$1\" rev-parse --show-toplevel 2>/dev/null) && F=$(git -C \"$1\" ls-files --full-name \"$2\" 2>/dev/null) && git -C \"$R\" show \"HEAD:$F\" > \"$3\"' -- \"%s\" \"%s\" \"%s\" 2>/dev/null", dir, name, base_tmp);
             if (system(cmd) != 0) {
@@ -1923,6 +1930,9 @@ int EBuffer::UpdateGitStatus() {
             snprintf(cmd, sizeof(cmd), "git diff --no-index --no-color -U0 \"%s\" \"%s\"", base_tmp, cur_tmp);
             fp = popen(cmd, "r");
             use_tmp = 1;
+        } else {
+            if (fd_cur != -1) { close(fd_cur); unlink(cur_tmp); }
+            if (fd_base != -1) { close(fd_base); unlink(base_tmp); }
         }
     }
 

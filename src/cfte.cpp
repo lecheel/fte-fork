@@ -209,12 +209,18 @@ int main(int argc, char **argv) {
 
     if (preprocess_only == false)
     {
-	sprintf(XTarget + strlen(XTarget), "cfte%ld.tmp", (long)getpid());
-	output = fopen(XTarget, "wb");
-	if (output == 0) {
-	    fprintf(stderr, "Cannot create '%s', errno=%d!\n", XTarget, errno);
-	    cleanup(1);
-	}
+        strlcat(XTarget, ".cfteXXXXXX", sizeof(XTarget));
+        int tmp_fd = mkstemp(XTarget);
+        if (tmp_fd == -1) {
+            fprintf(stderr, "Cannot create '%s', errno=%d!\n", XTarget, errno);
+            cleanup(1);
+        }
+        output = fdopen(tmp_fd, "wb");
+        if (output == 0) {
+            fprintf(stderr, "Cannot open fd for '%s', errno=%d!\n", XTarget, errno);
+            close(tmp_fd);
+            cleanup(1);
+        }
 
 	b[0] = b[1] = b[2] = b[3] = 0;
 

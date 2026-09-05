@@ -55,6 +55,17 @@ static int GetConfigFileName(int /*argc*/, char ** /*argv*/, char *ConfigFileNam
     char CfgName[MAXPATH] = "";
 
     if (ConfigFileName[0] == 0) {
+        const char *xdg_cfg = getenv("XDG_CONFIG_HOME");
+        if (xdg_cfg && *xdg_cfg) {
+            snprintf(CfgName, sizeof(CfgName), "%s/fte/system.fterc", xdg_cfg);
+        } else {
+            ExpandPath("~/.config/fte/system.fterc", CfgName, sizeof(CfgName));
+        }
+        if (access(CfgName, 0) == 0) {
+            strlcpy(ConfigFileName, CfgName, MAXPATH);
+            return 1;
+        }
+
         ExpandPath("~/.fterc", CfgName, sizeof(CfgName));
         strlcpy(ConfigFileName, CfgName, MAXPATH);
     }

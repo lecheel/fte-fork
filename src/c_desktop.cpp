@@ -32,11 +32,7 @@ int SaveDesktop(char *FileName) {
     while (M) {
         switch(M->GetContext()) {
         case CONTEXT_FILE:
-#ifdef CONFIG_OBJ_CVS
-            if (M != CvsLogView) {
-#else
             {
-#endif
                 EBuffer *B = (EBuffer *)M;
                 fprintf(fp, "F|%d|%s\n", B->ModelNo, B->FileName);
             }

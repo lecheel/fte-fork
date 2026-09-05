@@ -573,12 +573,7 @@ int EBuffer::SaveTo(char *AFileName) {
 
     // make only backups when user have requested a one
     if (BFI(this, BFI_MakeBackups) != 0) {
-        if (BFI(this, BFI_KeepBackups) == 0
-#ifdef CONFIG_OBJ_CVS
-            // No backups for CVS logs
-            || this == CvsLogView
-#endif
-           ) {
+        if (BFI(this, BFI_KeepBackups) == 0) {
             unlink(ABackupName);
         }
     }

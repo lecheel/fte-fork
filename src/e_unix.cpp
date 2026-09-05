@@ -35,7 +35,16 @@ int EView::SysShowHelp(ExState &State, const char *word) {
         word = wordAsk;
     }
 
-    snprintf(file, sizeof(file)-1, "/tmp/fte%d-man-%s", getpid(), word);
+    const char *tmpdir = getenv("XDG_RUNTIME_DIR");
+    if (!tmpdir || !*tmpdir) tmpdir = "/tmp";
+    snprintf(file, sizeof(file), "%s/fte_man_XXXXXX", tmpdir);
+    int tmp_fd = mkstemp(file);
+    if (tmp_fd == -1) {
+        Msg(S_ERROR, "Cannot create temp file for man page");
+        return 0;
+    }
+    close(tmp_fd);
+
     snprintf(command, sizeof(command)-1, "%s %s %s >'%s' 2>&1", HelpCommand, options, word, file);
 
     /// !!! why is this needed ???
@@ -47,7 +56,7 @@ int EView::SysShowHelp(ExState &State, const char *word) {
 
     if ((pid = fork()) == 0) {
         close(1);
-        SYSCALL(err = open(file, O_CREAT | O_WRONLY | O_APPEND, S_IRWXU));
+        SYSCALL(err = open(file, O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU));
 	if (err != -1) {
 	    close(2);
             //dup(1); // ignore error output
