@@ -142,6 +142,7 @@ int EBuffer::GetContext() {
 }
 
 void EEditPort::HandleEvent(TEvent &Event) {
+    int oldModified = Buffer->Modified;
     EViewPort::HandleEvent(Event);
     switch (Event.What) {
     case evKeyDown:
@@ -165,12 +166,6 @@ void EEditPort::HandleEvent(TEvent &Event) {
                 if (Buffer->BeginMacro() == 0)
                     return ;
                 Buffer->TypeChar(Ch);
-                if (Buffer->EnableGitGutter) {
-                    Buffer->GitDirty = 1;
-                    struct timeval tv;
-                    gettimeofday(&tv, NULL);
-                    Buffer->LastModifyTime = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
-                }
                 Event.What = evNone;
             }
         }
@@ -240,6 +235,17 @@ void EEditPort::HandleEvent(TEvent &Event) {
     case evMouseUp:
         HandleMouse(Event);
         break;
+    }
+
+    // If the buffer was modified by the command (which runs in Model->HandleEvent
+    // before this Port->HandleEvent), mark it git dirty to trigger the live update.
+    // This is safe from Use-After-Free because if the buffer was deleted (e.g. FileClose),
+    // this EEditPort is also deleted and this method would not be called.
+    if (Buffer->EnableGitGutter && !oldModified && Buffer->Modified) {
+        Buffer->GitDirty = 1;
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        Buffer->LastModifyTime = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
     }
 }
 void EEditPort::HandleMouse(TEvent &Event) {
@@ -706,30 +712,7 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
 }
 
 void EBuffer::HandleEvent(TEvent &Event) {
-    int oldModified = Modified;
-    int oldUndoPtr = 0;
-#ifdef CONFIG_UNDOREDO
-    oldUndoPtr = US.UndoPtr;
-#endif
-
     EModel::HandleEvent(Event);
-
-    // If a non-printable key command (Enter, Delete, Backspace, etc.)
-    // modified the buffer, mark it git dirty to trigger the live update.
-    // Printable keys are handled directly in EEditPort::HandleEvent.
-    if (EnableGitGutter) {
-        int changed = 0;
-        if (!oldModified && Modified) changed = 1;
-#ifdef CONFIG_UNDOREDO
-        if (oldUndoPtr != US.UndoPtr) changed = 1;
-#endif
-        if (changed) {
-            GitDirty = 1;
-            struct timeval tv;
-            gettimeofday(&tv, NULL);
-            LastModifyTime = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
-        }
-    }
 }
 
 int EBuffer::MoveToLine(ExState &State) {
@@ -1905,15 +1888,15 @@ int EBuffer::UpdateGitStatus() {
     if (!GitStatus) return 0;
     GitStatusCount = RCount;
 
-    char cmd[MAXPATH * 3 + 128];
+    char cmd[MAXPATH * 4 + 256];
     FILE *fp = NULL;
     char cur_tmp[MAXPATH];
     char base_tmp[MAXPATH];
     int use_tmp = 0;
 
     if (Modified) {
-        sprintf(cur_tmp, "/tmp/fte_cur_%ld.tmp", (long)getpid());
-        sprintf(base_tmp, "/tmp/fte_base_%ld.tmp", (long)getpid());
+        snprintf(cur_tmp, sizeof(cur_tmp), "/tmp/fte_cur_%ld.tmp", (long)getpid());
+        snprintf(base_tmp, sizeof(base_tmp), "/tmp/fte_base_%ld.tmp", (long)getpid());
 
         FILE *f_cur = fopen(cur_tmp, "w");
         if (f_cur) {
@@ -1925,20 +1908,20 @@ int EBuffer::UpdateGitStatus() {
             }
             fclose(f_cur);
 
-            sprintf(cmd, "sh -c 'R=$(git -C \"$1\" rev-parse --show-toplevel 2>/dev/null) && F=$(git -C \"$1\" ls-files --full-name \"$2\" 2>/dev/null) && git -C \"$R\" show \"HEAD:$F\" > \"$3\"' -- \"%s\" \"%s\" \"%s\" 2>/dev/null", dir, name, base_tmp);
+            snprintf(cmd, sizeof(cmd), "sh -c 'R=$(git -C \"$1\" rev-parse --show-toplevel 2>/dev/null) && F=$(git -C \"$1\" ls-files --full-name \"$2\" 2>/dev/null) && git -C \"$R\" show \"HEAD:$F\" > \"$3\"' -- \"%s\" \"%s\" \"%s\" 2>/dev/null", dir, name, base_tmp);
             if (system(cmd) != 0) {
                 FILE *f_b = fopen(base_tmp, "w");
                 if (f_b) fclose(f_b);
             }
 
-            sprintf(cmd, "git diff --no-index --no-color -U0 \"%s\" \"%s\"", base_tmp, cur_tmp);
+            snprintf(cmd, sizeof(cmd), "git diff --no-index --no-color -U0 \"%s\" \"%s\"", base_tmp, cur_tmp);
             fp = popen(cmd, "r");
             use_tmp = 1;
         }
     }
 
     if (!fp) {
-        sprintf(cmd, "git -C \"%s\" diff --no-color -U0 HEAD -- \"%s\"", dir, name);
+        snprintf(cmd, sizeof(cmd), "git -C \"%s\" diff --no-color -U0 HEAD -- \"%s\"", dir, name);
         fp = popen(cmd, "r");
     }
 

@@ -144,6 +144,8 @@ typedef enum {
     /// Move to line number given as argument
     ExFileGrepLine,
     /// Move to line by Grep
+    ExEnterGrep,
+    /// Open file and move to line from grep buffer
     ExMoveToColumn,
     /// Move to column given as argument
     ExMoveSavedPosCol,

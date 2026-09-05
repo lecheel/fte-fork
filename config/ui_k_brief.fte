@@ -214,7 +214,7 @@ eventmap PLAIN: MODEL {
     key   [S+G-Del]     { BlockCut }
     key   [A+G-Ins]     { BlockPasteColumn }
     key [A+G-S+Ins]     { BlockPasteLine }
-    key   [G-Enter]     { LineNews; CompleteGrep; FileClose; FileGrep; FileGrepLine; MoveLineCenter }
+    key   [G-Enter]     { EnterGrep}
     key    [BackSp]     { BackSpace }
     key     [G-Ins]     { ToggleInsert }
     key     [G-Del]     { Delete }
@@ -296,7 +296,7 @@ eventmap PLAIN: MODEL {
     key   [C+x]         { BlockCut }
     key   [C+D]         { LineDuplicate }
     key   [C+E]         { DirOpen }
-    key   [C+G]         { RoutinesList; FileCheck "c:\\ftefunc.grp"; FileOpen "c:\\ftefunc.grp"; ChangeToReadOnly }
+    key   [C+G]         { RoutinesList; FileCheck "/tmp/func.grp"; FileOpen "/tmp/func.grp"; ChangeToReadOnly }
 #    key   [C+G]         { ListRoutines }
     key   [C+H]         { RunProgram "info libc alphabetical " }
     key   [C+I]         { InsertTab }

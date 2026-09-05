@@ -1034,7 +1034,7 @@ int EBuffer::ScanNormalRoutine() {
 
     Msg(S_BUSY, "Matching %s", BFS(this, BFS_RoutineRegexp));
     if (RCount>1) {
-      if ((out=fopen("c:\\ftefunc.grp","wt"))!=NULL) {
+      if ((out=fopen("/tmp/func.grp","wt"))!=NULL) {
         fprintf(out,"File: %s\n",FileName);
         for (line = 0; line < RCount; line++) {
           L = RLine(line);
@@ -1064,7 +1064,7 @@ int EBuffer::ScanForASMSymbol() {
     char asmContext[MAXSEARCH+1]="";
     FILE *out;
     if (RCount>1) {
-      if ((out=fopen("c:\\ftefunc.grp","wt"))!=NULL) {
+      if ((out=fopen("/tmp/func.grp","wt"))!=NULL) {
       fprintf(out,"File: %s\n",FileName);
       for (line = 0; line < RCount; line++) {
           L = RLine(line);

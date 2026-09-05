@@ -150,6 +150,7 @@ int EView::ExecCommand(int Command, ExState &State) {
     case ExFileNext:            return FileNext();
     case ExFileLast:            return FileLast();
     case ExFileGrep:            return FileGrep();
+    case ExEnterGrep:           return EnterGrep(State);
     case ExFileOpen:            return FileOpen(State);
     case ExFileCheck:           return FileCheck(State);
 //    case ExAtagOpen:            return AtagOpen();
@@ -396,6 +397,37 @@ int EView::FileSaveAll() {
 int EView::FileGrep() {
     if (strlen(GrepName)==0) return 0;
     return MultiFileLoad(0, GrepName, NULL, this);
+}
+
+int EView::EnterGrep(ExState &/*State*/) {
+    EModel *M = Model;
+    if (M == 0 || M->GetContext() != CONTEXT_FILE) return 0;
+    EBuffer *B = (EBuffer *)M;
+
+    // Parse the current line to populate GrepName and GrepLine
+    if (B->CompleteGrep() == 0) return 0;
+
+    char FName[MAXPATH];
+    strlcpy(FName, GrepName, sizeof(FName));
+    int Line = GrepLine;
+
+    if (FName[0] == 0) return 0;
+
+    // Open the target file
+    if (MultiFileLoad(0, FName, NULL, this) == 0) return 0;
+
+    // Position the cursor in the newly loaded file
+    EBuffer *NewB = (EBuffer *)ActiveModel;
+    if (NewB && NewB->GetContext() == CONTEXT_FILE && Line > 0) {
+        NewB->SetNearPosR(NewB->CP.Col, Line - 1);
+        NewB->CenterPosR(NewB->CP.Col, Line - 1);
+    }
+
+    // Safely close the grep buffer
+    if (M != ActiveModel) {
+        DeleteModel(M);
+    }
+    return 1;
 }
 
 int EView::FileCheck(ExState &State) {

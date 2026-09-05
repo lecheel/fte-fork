@@ -128,6 +128,7 @@ public:
 //    int AtagBack();
     int FileCheck(ExState &State);
     int FileGrep();
+    int EnterGrep(ExState &State);
     int FileOpenInMode(ExState &State);
     int SetPrintDevice(ExState &State);
     int ToggleSysClipboard(ExState &State);

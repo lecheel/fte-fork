@@ -183,7 +183,7 @@ eventmap PLAIN: MODEL {
     key   [S+G-Del]     { BlockCut }
     key   [A+G-Ins]     { BlockPasteColumn }
     key [A+G-S+Ins]     { BlockPasteLine }
-    key     [G-Enter]   { LineNews; CompleteGrep;  FileClose; FileGrepName; FileGrepLine; MoveLineCenter }
+    key     [G-Enter]   { EnterGrep }
     key       [BackSp]  { BackSpace }
     key     [G-Ins]     { BlockPasteStream; BlockUnmark }
     key     [G-Del]     { Delete }
