@@ -1,6 +1,9 @@
 #ifndef __S_STRING_H__
 #define __S_STRING_H__
 
+#include <stddef.h>
+#include "sysdep.h"
+
 int UnTabStr(char *dest, int maxlen, const char *source, int slen);
 
 #if !defined(HAVE_STRLCPY)

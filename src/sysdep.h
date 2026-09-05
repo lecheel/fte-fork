@@ -10,6 +10,10 @@
 #ifndef __SYSDEP_H
 #define __SYSDEP_H
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -80,8 +84,12 @@ extern "C" int memicmp(const void *s1, const void *s2, size_t n);
 
 
 
-#undef HAVE_STRLCPY
-#undef HAVE_STRLCAT
+#if defined(__GLIBC__) && defined(__GLIBC_PREREQ)
+# if __GLIBC_PREREQ(2, 38)
+#  define HAVE_STRLCPY 1
+#  define HAVE_STRLCAT 1
+# endif
+#endif
 
 #ifndef HAVE_BOOL
 #define bool  int

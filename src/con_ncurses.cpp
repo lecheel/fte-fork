@@ -117,7 +117,10 @@ static int ConInitColors()
 	int c = 0;
 	int colors = has_colors();
 
-	if(colors) start_color();
+	if(colors) {
+		start_color();
+		use_default_colors();
+	}
 	for(int bgb = 0 ; bgb < 2; bgb++) /* bg bright bit */
 	{
 		for(int bg = 0 ; bg < 8; bg++)
@@ -155,6 +158,8 @@ int ConInit(int /*XSize */ , int /*YSize */ )
 	initscr();
 	ConInitColors();
 	mousemask(ALL_MOUSE_EVENTS|REPORT_MOUSE_POSITION, NULL);
+	printf("\033[?1000h\033[?1002h\033[?1006h");
+	fflush(stdout);
 	/*    cbreak (); */
 	raw();
 	noecho();
@@ -168,6 +173,8 @@ int ConInit(int /*XSize */ , int /*YSize */ )
 
 int ConDone(void)
 {
+	printf("\033[?1006l\033[?1002l\033[?1000l");
+	fflush(stdout);
 	keypad(stdscr,0);
 	endwin();
 	free_savedscreen();
@@ -265,18 +272,9 @@ int ConPutBox(int X, int Y, int W, int H, PCell Cell)
 				else
 					waddch(stdscr,'.');
 			}
-			else if(ch < 128 || ch >= 160)
-			{
-				waddch(stdscr,ch);
-			}
-			/*		    else if(ch < 180)
-			 {
-			 waddch(stdscr,GetDch(ch-128));
-			 }
-			 */
 			else
 			{
-				waddch(stdscr,'.');
+				waddch(stdscr,ch);
 			}
 			Cell++;
 		}
@@ -450,6 +448,26 @@ static int ConGetMouseEvent(
 	mmask_t bstate = mevent.bstate;
 
 	Event->What = evNone;
+#ifdef BUTTON4_PRESSED
+	if(bstate & BUTTON4_PRESSED)
+	{
+		Event->What = evCommand;
+		Event->Msg.View = 0;
+		Event->Msg.Command = cmVScrollUp;
+		Event->Msg.Param1 = 3;
+		return 0;
+	}
+#endif
+#ifdef BUTTON5_PRESSED
+	if(bstate & BUTTON5_PRESSED)
+	{
+		Event->What = evCommand;
+		Event->Msg.View = 0;
+		Event->Msg.Command = cmVScrollDown;
+		Event->Msg.Param1 = 3;
+		return 0;
+	}
+#endif
 	if(bstate & BUTTON1_PRESSED)
 	{
 		Event->What = Event->Mouse.What = evMouseDown;

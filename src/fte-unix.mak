@@ -2,7 +2,7 @@
 
 TARGETS = nfte
 PRIMARY = nfte
-USE_LOCALE = -DUSE_LOCALE
+USE_LOCALE = -DUSE_LOCALE -D_GNU_SOURCE -DNCURSES_WIDECHAR=1
 
 I18NOPTIONS = $(USE_LOCALE)
 
@@ -35,7 +35,7 @@ OBJS := $(addprefix obj/,$(OBJS))
 NOBJS := $(addprefix obj/,$(NOBJS))
 CFTE_OBJS := $(addprefix obj/,$(CFTE_OBJS))
 
-NLIBS    = -lncurses
+NLIBS    = -lncursesw
 
 .PHONY: all cfte nfte clean
 
