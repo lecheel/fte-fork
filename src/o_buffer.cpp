@@ -375,6 +375,12 @@ void EEditPort::HandleMouse(TEvent &Event) {
 }
 
 void EEditPort::UpdateView() {
+    if (Buffer->Modified) {
+        Buffer->GitDirty = 1;
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        Buffer->LastModifyTime = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+    }
     Buffer->Redraw();
 }
 
@@ -1900,7 +1906,7 @@ int EBuffer::UpdateGitStatus() {
             }
             fclose(f_cur);
 
-            sprintf(cmd, "git -C \"%s\" show \"HEAD:./%s\" > \"%s\" 2>/dev/null", dir, name, base_tmp);
+            sprintf(cmd, "git -C \"%s\" show \"HEAD:$(git -C \"%s\" rev-parse --show-prefix)%s\" > \"%s\" 2>/dev/null", dir, dir, name, base_tmp);
             if (system(cmd) == 0) {
                 sprintf(cmd, "git diff --no-index --no-color -U0 \"%s\" \"%s\"", base_tmp, cur_tmp);
                 fp = popen(cmd, "r");
@@ -1973,6 +1979,7 @@ int EBuffer::UpdateGitStatus() {
     }
     GitDirty = 0;
     FullRedraw();
+    Redraw();
     return 1;
 }
 
@@ -2011,9 +2018,8 @@ void CheckGitLiveUpdate() {
             struct timeval tv;
             gettimeofday(&tv, NULL);
             unsigned long now = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
-            if (now - B->LastModifyTime >= 400) {
+            if (now - B->LastModifyTime >= 350) {
                 B->UpdateGitStatus();
-                B->GitDirty = 0;
             }
         }
     }
@@ -2029,10 +2035,10 @@ int GetGitWaitTimeout() {
             unsigned long elapsed = now - B->LastModifyTime;
             if (elapsed >= 400) {
                 B->UpdateGitStatus();
-                B->GitDirty = 0;
-                return 0;
+                return -1;
             } else {
-                return (int)(400 - elapsed);
+                int rem = (int)(400 - elapsed);
+                return (rem > 0) ? rem : 1;
             }
         }
     }

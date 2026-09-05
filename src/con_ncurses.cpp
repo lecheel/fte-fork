@@ -637,10 +637,15 @@ int ConGetEvent(TEventMask /*EventMask */ ,
 
     sfd[0] = STDIN_FILENO;
 
-    if ((rtn = WaitPipeEvent(Event, wait_ms, sfd, 1)) != 0) return rtn;
+    rtn = WaitPipeEvent(Event, wait_ms, sfd, 1);
+    if (rtn != 0) return rtn;
 
-    if (wait_ms > 0)
+    // WaitPipeEvent timed out (no key pressed on stdin within wait_ms)
+    if (wait_ms >= 0) {
         CheckGitLiveUpdate();
+        Event->What = evNone;
+        return 0;
+    }
 
 	int ch = wgetch(stdscr);
 	Event->What = evKeyDown;
