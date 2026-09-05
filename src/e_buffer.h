@@ -215,6 +215,15 @@ public:
 
     int MinRedraw, MaxRedraw;
     int RedrawToEos;
+
+    char *GitStatus;
+    int GitStatusCount;
+    int EnableGitGutter;
+
+    void FreeGitStatus();
+    int UpdateGitStatus();
+    char GetGitLineStatus(int Row);
+    int ToggleGitGutter();
     
 #ifdef CONFIG_WORD_HILIT
     char **WordList;

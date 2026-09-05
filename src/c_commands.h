@@ -623,6 +623,10 @@ typedef enum {
     ///
     ExToggleMakeBackups,
     ///
+    ExToggleGitGutter,
+    /// Toggle Git hunk gutter
+    ExGitUpdate,
+    /// Refresh Git hunk status
     ExSetLeftMargin,
     ///
     ExSetRightMargin,

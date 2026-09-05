@@ -139,32 +139,50 @@ void EBuffer::Draw(int Row0, int RowE) {
 void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
     hlState State;
     int StartPos, EndPos;
+    int gutterW = (EnableGitGutter && GitStatus) ? 1 : 0;
 
     HilitX = 0;
     MoveChar(B, 0, W, ' ', hcPlain_Background, W);
-    //    if ((VRow == VCount - 1) && !BFI(this, BFI_ForceNewLine)) {
-    // if (BFI(this, BFI_ShowMarkers))
-    //     MoveChar(B, 0, W, EOF_MARKER, hcPlain_Markers, W);
-    //    }
+
+    if (gutterW > 0 && VRow < VCount) {
+        int Row = VToR(VRow);
+        char st = GetGitLineStatus(Row);
+        char sym = ' ';
+        TAttr col = hcPlain_Background;
+        if (st == 1) {
+            sym = '+';
+            col = 0x02;
+        } else if (st == 2) {
+            sym = '~';
+            col = 0x0E;
+        } else if (st == 3) {
+            sym = '_';
+            col = 0x04;
+        }
+        MoveChar(B, 0, W, sym, col, gutterW);
+    }
+
     if (VRow < VCount) {
         int Row = VToR(VRow);
         PELine L = RLine(Row);
         int ECol = 0;
+        int txtW = W - gutterW;
+        PCell txtB = B + gutterW;
 
         if (Row > 0) State = RLine(Row - 1)->StateE;
         else State = 0;
 #ifdef CONFIG_SYNTAX_HILIT
         if (BFI(this, BFI_HilitOn) == 1 && HilitProc != 0)
-            HilitProc(this, Row, B, C, W, L, State, 0, &ECol);
+            HilitProc(this, Row, txtB, C, txtW, L, State, 0, &ECol);
         else
 #endif
-            Hilit_Plain(this, Row, B, C, W, L, State, 0, &ECol);
+            Hilit_Plain(this, Row, txtB, C, txtW, L, State, 0, &ECol);
         if (L->StateE != State) {
             HilitX = 1;
             L->StateE = State;
         }
         if (BFI(this, BFI_ShowMarkers)) {
-            MoveChar(B, ECol - C, W, ConGetDrawChar((Row == RCount - 1) ? DCH_EOF : DCH_EOL), hcPlain_Markers, 1);
+            MoveChar(txtB, ECol - C, txtW, ConGetDrawChar((Row == RCount - 1) ? DCH_EOF : DCH_EOL), hcPlain_Markers, 1);
             ECol += 1;
         }
         if (Row < RCount) {
@@ -180,7 +198,7 @@ void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
                 else foldColor=hcPlain_Folds[4];
                 if (FF[f].open == 1) {
                     l = sprintf(fold, "[%d]", FF[f].level);
-                    MoveStr(B, ECol - C + 1, W, fold, foldColor, 10);
+                    MoveStr(txtB, ECol - C + 1, txtW, fold, foldColor, 10);
                     ECol += l;
                 } else {
                     if (VRow < VCount - 1) {
@@ -189,9 +207,9 @@ void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
                         Folded = RCount - (VRow + Vis(VRow));
                     }
                     l = sprintf(fold, "(%d:%d)", FF[f].level, Folded);
-                    MoveStr(B, ECol - C + 1, W, fold, foldColor, 10);
+                    MoveStr(txtB, ECol - C + 1, txtW, fold, foldColor, 10);
                     ECol += l;
-                    MoveAttr(B, 0, W, foldColor, W);
+                    MoveAttr(txtB, 0, txtW, foldColor, txtW);
                 }
             }
         }
@@ -200,7 +218,7 @@ void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
             case bmLine:
                 StartPos = 0;
                 if (Row == BE.Row) EndPos = 0;
-                else EndPos = W;
+                else EndPos = txtW;
                 break;
             case bmColumn:
                 StartPos = BB.Col - C;
@@ -213,13 +231,13 @@ void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
                     EndPos = BE.Col - C;
                 } else if (Row == BB.Row) {
                     StartPos = BB.Col - C;
-                    EndPos = W;
+                    EndPos = txtW;
                 } else if (Row == BE.Row) {
                     StartPos = 0;
                     EndPos = BE.Col - C;
                 } else {
                     StartPos = 0;
-                    EndPos = W;
+                    EndPos = txtW;
                 }
                 break;
             default:
@@ -227,9 +245,9 @@ void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
                 break;
             }
             if (BFI(this, BFI_SeeThruSel))
-                MoveBgAttr(B, StartPos, W, hcPlain_Selected, EndPos - StartPos);
+                MoveBgAttr(txtB, StartPos, txtW, hcPlain_Selected, EndPos - StartPos);
             else
-                MoveAttr(B, StartPos, W, hcPlain_Selected, EndPos - StartPos);
+                MoveAttr(txtB, StartPos, txtW, hcPlain_Selected, EndPos - StartPos);
         }
 #ifdef CONFIG_BOOKMARKS
         if (BFI(this, BFI_ShowBookmarks)) {
@@ -240,9 +258,9 @@ void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
                 if (strncmp(Name, "_BMK", 4) == 0) {
                     // User bookmark, hilite line
                     if (BFI(this, BFI_SeeThruSel))
-                        MoveBgAttr(B, 0, W, hcPlain_Bookmark, W);
+                        MoveBgAttr(txtB, 0, txtW, hcPlain_Bookmark, txtW);
                     else
-                        MoveAttr(B, 0, W, hcPlain_Bookmark, W);
+                        MoveAttr(txtB, 0, txtW, hcPlain_Bookmark, txtW);
                     break;
                 }
             }
@@ -251,9 +269,9 @@ void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
         if (Match.Row != -1 && Match.Col != -1) {
             if (Row == Match.Row) {
                 if (BFI(this, BFI_SeeThruSel))
-                    MoveBgAttr(B, Match.Col - C, W, hcPlain_Found, MatchLen);
+                    MoveBgAttr(txtB, Match.Col - C, txtW, hcPlain_Found, MatchLen);
                 else
-                    MoveAttr(B, Match.Col - C, W, hcPlain_Found, MatchLen);
+                    MoveAttr(txtB, Match.Col - C, txtW, hcPlain_Found, MatchLen);
             }
         }
     } else if (VRow == VCount) {
@@ -490,8 +508,9 @@ void EBuffer::Redraw() {
         if (V->MView->Win->GetStatusContext() == V->MView) {
             V->MView->ConPutBox(0, W->Rows, W->Cols, 1, B);
             if (V->MView->IsActive()) {
+                int gutterW = (EnableGitGutter && GitStatus) ? 1 : 0;
                 V->MView->ConShowCursor();
-                V->MView->ConSetCursorPos(W->CP.Col - W->TP.Col, W->CP.Row - W->TP.Row);
+                V->MView->ConSetCursorPos(W->CP.Col - W->TP.Col + gutterW, W->CP.Row - W->TP.Row);
                 if (BFI(this, BFI_Insert)) {
                     V->MView->ConSetCursorSize(CursorInsSize[0], CursorInsSize[1]);
                 } else {

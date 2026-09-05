@@ -17,7 +17,12 @@ EViewPort *EBuffer::CreateViewPort(EView *V) {
     AddView(V);
 
     if (Loaded == 0 && !suspendLoads) {
+        GitStatus = 0;
+        GitStatusCount = 0;
+        EnableGitGutter = 1;
+
         Load();
+        UpdateGitStatus();
 
 #ifdef CONFIG_OBJ_MESSAGES
         if (CompilerMsgs)
@@ -222,8 +227,9 @@ void EEditPort::HandleMouse(TEvent &Event) {
     x = Event.Mouse.X;
     y = Event.Mouse.Y;
 
+    int gutterW = (Buffer->EnableGitGutter && Buffer->GitStatus) ? 1 : 0;
     if (Event.What != evMouseDown || y < H - 1) {
-        xx = x + TP.Col;
+        xx = x - gutterW + TP.Col;
         yy = y + TP.Row;
         if (yy >= Buffer->VCount) yy = Buffer->VCount - 1;
         if (yy < 0) yy = 0;
@@ -550,7 +556,14 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
     case ExMoveFoldTop:           return MoveFoldTop();
     case ExMoveFoldPrev:          return MoveFoldPrev();
     case ExMoveFoldNext:          return MoveFoldNext();
-    case ExFileSave:              return Save();
+    case ExFileSave:
+        {
+            int rc = Save();
+            if (rc == 1) UpdateGitStatus();
+            return rc;
+        }
+    case ExToggleGitGutter:       return ToggleGitGutter();
+    case ExGitUpdate:             return UpdateGitStatus();
     case ExFilePrint:             return FilePrint();
     case ExBlockPrint:            return BlockPrint();
     case ExBlockTrim:             return BlockTrim();
@@ -1803,4 +1816,101 @@ int EBuffer::GetIntVar(int var, int *value) {
     case mvCurCol: *value = CP.Col; return 1;
     }
     return EModel::GetIntVar(var, value);
+}
+
+void EBuffer::FreeGitStatus() {
+    if (GitStatus) {
+        free(GitStatus);
+        GitStatus = 0;
+    }
+    GitStatusCount = 0;
+}
+
+int EBuffer::ToggleGitGutter() {
+    EnableGitGutter = !EnableGitGutter;
+    if (EnableGitGutter && !GitStatus)
+        UpdateGitStatus();
+    FullRedraw();
+    return 1;
+}
+
+char EBuffer::GetGitLineStatus(int Row) {
+    if (!GitStatus || Row < 0 || Row >= GitStatusCount)
+        return 0;
+    return GitStatus[Row];
+}
+
+int EBuffer::UpdateGitStatus() {
+    FreeGitStatus();
+    if (!FileName || FileName[0] == '\0')
+        return 0;
+
+    char dir[MAXPATH];
+    char name[MAXPATH];
+    if (JustDirectory(FileName, dir, sizeof(dir)) == -1)
+        return 0;
+    if (JustFileName(FileName, name, sizeof(name)) == -1)
+        return 0;
+
+    if (RCount <= 0) return 0;
+    GitStatus = (char *)calloc(RCount, sizeof(char));
+    if (!GitStatus) return 0;
+    GitStatusCount = RCount;
+
+    char cmd[MAXPATH * 2 + 64];
+    sprintf(cmd, "git -C \"%s\" diff --no-color -U0 HEAD -- \"%s\"", dir, name);
+
+    FILE *fp = popen(cmd, "r");
+    if (!fp) {
+        FreeGitStatus();
+        return 0;
+    }
+
+    char line[512];
+    while (fgets(line, sizeof(line), fp)) {
+        if (line[0] != '@' || line[1] != '@')
+            continue;
+
+        int old_start = 0, old_count = 1;
+        int new_start = 0, new_count = 1;
+
+        char *plus = strchr(line, '+');
+        if (!plus) continue;
+
+        char *minus = strchr(line, '-');
+        if (minus && minus < plus) {
+            old_start = atoi(minus + 1);
+            char *comma = strchr(minus, ',');
+            if (comma && comma < plus)
+                old_count = atoi(comma + 1);
+        }
+
+        new_start = atoi(plus + 1);
+        char *comma = strchr(plus, ',');
+        char *at_end = strstr(plus, "@@");
+        if (comma && (!at_end || comma < at_end))
+            new_count = atoi(comma + 1);
+
+        if (old_count == 0 && new_count > 0) {
+            for (int i = 0; i < new_count; i++) {
+                int row = (new_start - 1) + i;
+                if (row >= 0 && row < GitStatusCount)
+                    GitStatus[row] = 1;
+            }
+        } else if (new_count == 0 && old_count > 0) {
+            int row = new_start - 1;
+            if (row < 0) row = 0;
+            if (row >= 0 && row < GitStatusCount)
+                GitStatus[row] = 3;
+        } else {
+            for (int i = 0; i < new_count; i++) {
+                int row = (new_start - 1) + i;
+                if (row >= 0 && row < GitStatusCount)
+                    GitStatus[row] = 2;
+            }
+        }
+    }
+    pclose(fp);
+    FullRedraw();
+    return 1;
 }
