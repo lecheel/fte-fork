@@ -627,6 +627,10 @@ typedef enum {
     /// Toggle Git hunk gutter
     ExGitUpdate,
     /// Refresh Git hunk status
+    ExGitNextHunk,
+    /// Move cursor to next Git hunk
+    ExGitPrevHunk,
+    /// Move cursor to previous Git hunk
     ExSetLeftMargin,
     ///
     ExSetRightMargin,

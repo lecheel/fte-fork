@@ -224,6 +224,8 @@ public:
     int UpdateGitStatus();
     char GetGitLineStatus(int Row);
     int ToggleGitGutter();
+    int GitNextHunk();
+    int GitPrevHunk();
     
 #ifdef CONFIG_WORD_HILIT
     char **WordList;

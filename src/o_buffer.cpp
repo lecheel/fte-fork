@@ -143,6 +143,20 @@ void EEditPort::HandleEvent(TEvent &Event) {
     switch (Event.What) {
     case evKeyDown:
         {
+            TKeyCode code = Event.Key.Code;
+            int baseKey = keyCode(code);
+            int asciiCode = (int)(code & 0xFF);
+            if ((isCtrl(code) && (baseKey == 'l' || baseKey == 'L')) || asciiCode == 12) {
+                Buffer->GitNextHunk();
+                Event.What = evNone;
+                return ;
+            }
+            if ((isCtrl(code) && (baseKey == 'p' || baseKey == 'P')) || asciiCode == 16) {
+                Buffer->GitPrevHunk();
+                Event.What = evNone;
+                return ;
+            }
+
             char Ch;
             if (GetCharFromEvent(Event, &Ch)) {
                 if (Buffer->BeginMacro() == 0)
@@ -564,6 +578,8 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
         }
     case ExToggleGitGutter:       return ToggleGitGutter();
     case ExGitUpdate:             return UpdateGitStatus();
+    case ExGitNextHunk:           return GitNextHunk();
+    case ExGitPrevHunk:           return GitPrevHunk();
     case ExFilePrint:             return FilePrint();
     case ExBlockPrint:            return BlockPrint();
     case ExBlockTrim:             return BlockTrim();
@@ -1857,10 +1873,43 @@ int EBuffer::UpdateGitStatus() {
     if (!GitStatus) return 0;
     GitStatusCount = RCount;
 
-    char cmd[MAXPATH * 2 + 64];
-    sprintf(cmd, "git -C \"%s\" diff --no-color -U0 HEAD -- \"%s\"", dir, name);
+    char cmd[MAXPATH * 3 + 128];
+    FILE *fp = NULL;
+    char cur_tmp[MAXPATH];
+    char base_tmp[MAXPATH];
+    int use_tmp = 0;
 
-    FILE *fp = popen(cmd, "r");
+    if (Modified) {
+        sprintf(cur_tmp, "%s.fte_cur_tmp", FileName);
+        sprintf(base_tmp, "%s.fte_base_tmp", FileName);
+
+        FILE *f_cur = fopen(cur_tmp, "w");
+        if (f_cur) {
+            for (int i = 0; i < RCount; i++) {
+                PELine L = RLine(i);
+                if (L && L->Chars && L->Count > 0)
+                    fwrite(L->Chars, 1, L->Count, f_cur);
+                fputc('\n', f_cur);
+            }
+            fclose(f_cur);
+
+            sprintf(cmd, "git -C \"%s\" show \"HEAD:./%s\" > \"%s\" 2>/dev/null", dir, name, base_tmp);
+            if (system(cmd) == 0) {
+                sprintf(cmd, "git diff --no-index --no-color -U0 \"%s\" \"%s\"", base_tmp, cur_tmp);
+                fp = popen(cmd, "r");
+                use_tmp = 1;
+            } else {
+                unlink(cur_tmp);
+                unlink(base_tmp);
+            }
+        }
+    }
+
+    if (!fp) {
+        sprintf(cmd, "git -C \"%s\" diff --no-color -U0 HEAD -- \"%s\"", dir, name);
+        fp = popen(cmd, "r");
+    }
+
     if (!fp) {
         FreeGitStatus();
         return 0;
@@ -1911,6 +1960,78 @@ int EBuffer::UpdateGitStatus() {
         }
     }
     pclose(fp);
+    if (use_tmp) {
+        unlink(cur_tmp);
+        unlink(base_tmp);
+    }
     FullRedraw();
+    return 1;
+}
+
+int EBuffer::GitNextHunk() {
+    UpdateGitStatus();
+    if (!GitStatus || RCount <= 0)
+        return 0;
+
+    int cur = VToR(CP.Row);
+    int r = cur;
+
+    while (r < RCount && GetGitLineStatus(r) != 0)
+        r++;
+    while (r < RCount && GetGitLineStatus(r) == 0)
+        r++;
+
+    if (r >= RCount) {
+        r = 0;
+        while (r < cur && GetGitLineStatus(r) == 0)
+            r++;
+        if (r >= cur || GetGitLineStatus(r) == 0) {
+            Msg(S_INFO, "No other Git hunks found.");
+            return 0;
+        }
+    }
+
+    SetNearPosR(CP.Col, r);
+    Msg(S_INFO, "Git hunk at line %d", r + 1);
+    return 1;
+}
+
+int EBuffer::GitPrevHunk() {
+    UpdateGitStatus();
+    if (!GitStatus || RCount <= 0)
+        return 0;
+
+    int cur = VToR(CP.Row);
+    int r = cur;
+
+    if (r > 0 && GetGitLineStatus(r) != 0 && GetGitLineStatus(r - 1) != 0) {
+        while (r > 0 && GetGitLineStatus(r - 1) != 0)
+            r--;
+    } else {
+        while (r >= 0 && GetGitLineStatus(r) != 0)
+            r--;
+        while (r >= 0 && GetGitLineStatus(r) == 0)
+            r--;
+        if (r >= 0) {
+            while (r > 0 && GetGitLineStatus(r - 1) != 0)
+                r--;
+        }
+    }
+
+    if (r < 0) {
+        r = RCount - 1;
+        while (r > cur && GetGitLineStatus(r) == 0)
+            r--;
+        if (r > cur) {
+            while (r > 0 && GetGitLineStatus(r - 1) != 0)
+                r--;
+        } else {
+            Msg(S_INFO, "No previous Git hunks found.");
+            return 0;
+        }
+    }
+
+    SetNearPosR(CP.Col, r);
+    Msg(S_INFO, "Git hunk at line %d", r + 1);
     return 1;
 }
