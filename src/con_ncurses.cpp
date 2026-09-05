@@ -7,6 +7,7 @@
  *
  */
 
+#include "fte.h"
 #include <ncurses.h>
 #include <unistd.h>
 #include <poll.h>
@@ -159,7 +160,7 @@ int ConInit(int /*XSize */ , int /*YSize */ )
 	initscr();
 	ConInitColors();
 	mousemask(ALL_MOUSE_EVENTS|REPORT_MOUSE_POSITION, NULL);
-	printf("\033[?1000h\033[?1002h\033[?1006h");
+	printf("\033[?2004h\033[?1000h\033[?1002h\033[?1006h");
 	fflush(stdout);
 	/*    cbreak (); */
 	raw();
@@ -174,7 +175,7 @@ int ConInit(int /*XSize */ , int /*YSize */ )
 
 int ConDone(void)
 {
-	printf("\033[?1006l\033[?1002l\033[?1000l");
+	printf("\033[?2004l\033[?1006l\033[?1002l\033[?1000l");
 	fflush(stdout);
 	keypad(stdscr,0);
 	endwin();
@@ -546,6 +547,79 @@ static int ConGetEscEvent(TEvent *Event)
 		if(ch1 == ERR) /* translate to Alt-[ or Alt-O */
 		{
        			KEvent->Code |= (kfAlt| ch);
+		}
+		else if(ch1 == '2' && ch2 == '0')
+		{
+			char ch3 = getch();
+			char ch4 = getch();
+			if(ch3 == '0' && ch4 == '~')
+			{
+				// Bracketed paste: read payload until \033[201~
+				size_t cap = 4096, len = 0;
+				char *data = (char *)malloc(cap);
+				if(data)
+				{
+					int c;
+					while((c = getch()) != ERR)
+					{
+						if(c == 27)
+						{
+							int n1 = getch();
+							int n2 = getch();
+							int n3 = getch();
+							int n4 = getch();
+							if(n1 == '[' && n2 == '2' && n3 == '0' && n4 == '1')
+							{
+								(void)getch(); // consume '~'
+								break;
+							}
+						}
+						data[len++] = (char)c;
+						if(len + 16 >= cap)
+						{
+							cap *= 2;
+							char *tmp = (char *)realloc(data, cap);
+							if(!tmp) break;
+							data = tmp;
+						}
+					}
+					data[len] = '\0';
+					if(SSBuffer)
+					{
+						SSBuffer->Clear();
+						size_t j = 0;
+						int l = 0;
+						EPoint P;
+						for(size_t i = 0; i < len; i++)
+						{
+							if(data[i] == '\n')
+							{
+								SSBuffer->AssertLine(l);
+								P.Col = 0; P.Row = l++;
+								int dx = (i > 0 && data[i-1] == '\r') ? 1 : 0;
+								SSBuffer->InsertLine(P, (int)(i - j - dx), data + j);
+								j = i + 1;
+							}
+						}
+						if(j < len)
+						{
+							SSBuffer->AssertLine(l);
+							P.Col = 0; P.Row = l++;
+							int dx = (len > 0 && data[len-1] == '\r') ? 1 : 0;
+							SSBuffer->InsText(P.Row, P.Col, (int)(len - j - dx), data + j);
+						}
+					}
+					free(data);
+					Event->What = evCommand;
+					Event->Msg.View = 0;
+					Event->Msg.Command = ExBlockPasteStream;
+					Event->Msg.Param1 = 0;
+					Event->Msg.Param2 = 0;
+					timeout(-1);
+					keypad(stdscr, 1);
+					return 1;
+				}
+			}
 		}
 		else if(ch2 == '~' || ch2 == '$')
 		{

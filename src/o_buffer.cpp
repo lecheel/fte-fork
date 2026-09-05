@@ -2036,7 +2036,7 @@ void CheckGitLiveUpdate() {
             struct timeval tv;
             gettimeofday(&tv, NULL);
             unsigned long now = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
-            if (now - B->LastModifyTime >= 350) {
+            if (now - B->LastModifyTime >= 600) {
                 B->UpdateGitStatus();
             }
         }
@@ -2051,11 +2051,11 @@ int GetGitWaitTimeout() {
             gettimeofday(&tv, NULL);
             unsigned long now = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
             unsigned long elapsed = now - B->LastModifyTime;
-            if (elapsed >= 400) {
+            if (elapsed >= 600) {
                 B->UpdateGitStatus();
                 return -1;
             } else {
-                int rem = (int)(400 - elapsed);
+                int rem = (int)(600 - elapsed);
                 return (rem > 0) ? rem : 1;
             }
         }

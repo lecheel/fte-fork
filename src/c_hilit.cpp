@@ -246,7 +246,7 @@ int HState::GetHilitWord(int len, char *str, ChColor &clr) {
         }
     } else {
         while (p && *p) {
-            if (memcmp(p, str, len) == 0) {
+            if (*p == *str && memcmp(p, str, len) == 0) {
                 clr = COUNT_CLR + ((unsigned char*)p)[len];
                 return 1;
             }

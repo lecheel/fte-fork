@@ -613,7 +613,7 @@ int EBuffer::GetHilitWord(int len, char *str, ChColor &clr, int IgnCase) {
         }
     } else {
         while (p && *p) {
-            if (memcmp(p, str, len) == 0) {
+            if (*p == *str && memcmp(p, str, len) == 0) {
                 clr = COUNT_CLR + ((unsigned char*)p)[len];
                 //printf("PLEN %d  %d\n", p[len], COUNT_CLR);
 		return 1;
