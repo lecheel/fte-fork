@@ -744,38 +744,39 @@ int EBuffer::CompleteGrep() {  // it should only work via Semware GREP 2.0
     GetStrVar(mvFileExtension,cmdStr,1);
     Msg(S_INFO,"GRP Founded");
     if (!stricmp(cmdStr,".GRP")) {
-        if (strlen(L->Chars)>=512)
-          strncpy(cmdStr,L->Chars,512);
-        else
-          strcpy(cmdStr,L->Chars);
+        int LLen = L->Count;
+        if (LLen >= 512) LLen = 511;
+        memcpy(cmdStr, L->Chars, LLen);
+        cmdStr[LLen] = 0;
+        
         pp=strstr(cmdStr,": ");
         if (pp==NULL) {
           pp=strstr(cmdStr,":\t");
         }
         if (pp!=NULL) {    // Line Number found in GREP
              cnt = 0;
-             while (cmdStr[cnt]!=':') cnt++;
+             while (cmdStr[cnt]!=':' && cmdStr[cnt] != 0) cnt++;
              cmdStr[cnt]=0;
              GrepLine = atoi(cmdStr);
              CurrLine = VToR(CP.Row) + 1;     // Current Line number
     	     for (line = CurrLine-1; line>=0; line--) {
                L = RLine(line);
-               if (strlen(L->Chars)>=512)
-                 strncpy(cmdStr,L->Chars,512);
-               else
-                 strcpy(cmdStr,L->Chars);
+               LLen = L->Count;
+               if (LLen >= 512) LLen = 511;
+               memcpy(cmdStr, L->Chars, LLen);
+               cmdStr[LLen] = 0;
                cmdStr[5]=0;
                if (!strcmp(cmdStr,"File:")) {
-                  if (strlen(L->Chars)>=512)
-                    strncpy(cmdStr,L->Chars,512);
-                  else
-                    strcpy(cmdStr,L->Chars);
+                  LLen = L->Count;
+                  if (LLen >= 512) LLen = 511;
+                  memcpy(cmdStr, L->Chars, LLen);
+                  cmdStr[LLen] = 0;
                   cnt=0;
                   MaxCnt=strlen(cmdStr);
-                  while (cmdStr[cnt]!=0x0D||cnt>MaxCnt) cnt++;
+                  while (cmdStr[cnt]!=0x0D && cnt<MaxCnt) cnt++;
                   cmdStr[cnt]=0;
                   qq = cmdStr;
-                  strcpy(cmdStr,qq+6);
+                  memmove(cmdStr, qq+6, strlen(qq+6) + 1);
                   GotInfo = 1;
                   strcpy(GrepName,cmdStr);
                   break;
@@ -787,28 +788,26 @@ int EBuffer::CompleteGrep() {  // it should only work via Semware GREP 2.0
          CurrLine = VToR(CP.Row);     // Current Line number
          L=RLine(CurrLine);
         if (L->Chars != NULL) {
-         if (strlen(L->Chars)>=512)
-             strncpy(cmdStr,L->Chars,512);
-         else
-             strcpy(cmdStr,L->Chars);
+            int LLen = L->Count;
+            if (LLen >= 512) LLen = 511;
+            memcpy(cmdStr, L->Chars, LLen);
+            cmdStr[LLen] = 0;
 
-         cnt=0;
-         MaxCnt=strlen(cmdStr);
-         if (MaxCnt>3) {
-            while (cmdStr[cnt]!=0x0D||cnt>=MaxCnt) cnt++;
-            cmdStr[cnt]=0;
-            GotInfo=1;
-           } else {
-             cmdStr[0]=0;	// ERROR
-           }
-         }
-         strcpy(GrepName,cmdStr);
-//       Msg(S_INFO,GrepName);
-
+            cnt=0;
+            MaxCnt=strlen(cmdStr);
+            if (MaxCnt>3) {
+                while (cmdStr[cnt]!=0x0D && cnt<MaxCnt) cnt++;
+                cmdStr[cnt]=0;
+                GotInfo=1;
+            } else {
+                cmdStr[0]=0;	// ERROR
+            }
+            strcpy(GrepName,cmdStr);
+        }
        } else {
        Msg(S_INFO," ... only effect in Grep Index File ...");
        }
-           }
+    }
     return (GotInfo);
 }
 
