@@ -103,7 +103,7 @@ const char *GetGUICharacters(const char *which, const char *defChars) {
     for (g = GUICharacters; g; g=gg) {
         gg = g->next;
         if (strcmp(g->name, which) == 0) {
-            if ((i = strlen(g->chars)) < strlen(defChars)) {
+            if ((i = (unsigned int)strlen(g->chars)) < strlen(defChars)) {
                 s = new char [strlen(defChars) + 1];
                 assert(s != NULL);
                 strcpy(s, g->chars);
@@ -155,11 +155,10 @@ static void AppendGUICharacters(const char *string) {
 static int AddKeyword(ColorKeywords *tab, char color, const char *keyword) {
     int len;
 
-    len = strlen(keyword);
+    len = (int)strlen(keyword);
     if (len < 1 || len >= CK_MAXLEN) return 0;
-
     if (tab->key[len]) {
-        int lx = strlen(tab->key[len]);
+        int lx = (int)strlen(tab->key[len]);
         char *key;
 
         key = (char *)realloc(tab->key[len], lx + len + 1 + 1);
@@ -320,7 +319,7 @@ static int SetEventString(EEventMap *Map, long what, const char *string) {
     switch (what) {
     case EM_MainMenu:
     case EM_LocalMenu:
-        Map->SetMenu(what, string);
+        Map->SetMenu((int)what, string);
         break;
     default:
         ENDFUNCRC(-1);
@@ -350,7 +349,7 @@ static unsigned char GetObj(CurPos &cp, unsigned short &len) {
         unsigned char l[2];
         c = *cp.c++;
         memcpy(l, cp.c, 2);
-        len = (l[1] << 8) + l[0];
+        len = (unsigned short)((l[1] << 8) + l[0]);
         cp.c += 2;
         return c;
     }
@@ -424,7 +423,7 @@ static int ReadCommands(CurPos &cp, const char *Name) {
                 //                    return -1;
                 //                }
 
-                if (AddCommand(Cmd, cmd, cnt, ign) == 0) {
+                if (AddCommand((int)Cmd, (int)cmd, (int)cnt, (int)ign) == 0) {
                     if (Name == 0 || strcmp(Name, "xx") != 0) {
                         fprintf(stderr, "Bad Command Id: %ld\n", cmd);
                         ENDFUNCRC(-1);
@@ -437,7 +436,7 @@ static int ReadCommands(CurPos &cp, const char *Name) {
                 const char *s = GetCharStr(cp, len);
 
                 if (s == 0) ENDFUNCRC(-1);
-                if (AddString(Cmd, s) == 0) ENDFUNCRC(-1);
+                if (AddString((int)Cmd, s) == 0) ENDFUNCRC(-1);
             }
             break;
         case CF_INT:
@@ -445,7 +444,7 @@ static int ReadCommands(CurPos &cp, const char *Name) {
                 long num;
 
                 if (GetNum(cp, num) == 0) ENDFUNCRC(-1);
-                if (AddNumber(Cmd, num) == 0) ENDFUNCRC(-1);
+                if (AddNumber((int)Cmd, (int)num) == 0) ENDFUNCRC(-1);
             }
             break;
         case CF_VARIABLE:
@@ -453,14 +452,14 @@ static int ReadCommands(CurPos &cp, const char *Name) {
                 long num;
 
                 if (GetNum(cp, num) == 0) ENDFUNCRC(-1);
-                if (AddVariable(Cmd, num) == 0) ENDFUNCRC(-1);
+                if (AddVariable((int)Cmd, (int)num) == 0) ENDFUNCRC(-1);
             }
             break;
         case CF_CONCAT:
-            if (AddConcat(Cmd) == 0) ENDFUNCRC(-1);
+            if (AddConcat((int)Cmd) == 0) ENDFUNCRC(-1);
             break;
         case CF_END:
-            ENDFUNCRC(Cmd);
+            ENDFUNCRC((int)Cmd);
         default:
             ENDFUNCRC(-1);
         }
@@ -570,7 +569,7 @@ static int ReadHilitColors(CurPos &cp, EColorize *Colorize, const char * /*ObjNa
                     return -1;
                 if ((svalue = GetCharStr(cp, len)) == 0)
                     return -1;
-                if (Colorize->SetColor(cidx, svalue) == 0)
+                if (Colorize->SetColor((int)cidx, svalue) == 0)
                     return -1;
             }
             break;
@@ -743,7 +742,7 @@ static int ReadColorize(CurPos &cp, EColorize *Colorize, const char *ModeName) {
 
                 newState.InitState();
 
-                newState.color = color;
+                newState.color = (int)color;
 
                 Colorize->hm->AddState(newState);
                 LastState = stateno;
@@ -776,8 +775,8 @@ static int ReadColorize(CurPos &cp, EColorize *Colorize, const char *ModeName) {
                 newTrans.InitTrans();
 
                 newTrans.matchFlags = matchFlags;
-                newTrans.nextState = nextState;
-                newTrans.color = color;
+                newTrans.nextState = (int)nextState;
+                newTrans.color = (int)color;
 
                 if (newTrans.matchFlags & MATCH_REGEXP) {
                     newTrans.regexp = RxCompile(match);
@@ -791,7 +790,7 @@ static int ReadColorize(CurPos &cp, EColorize *Colorize, const char *ModeName) {
                     SetWordChars(newTrans.match, match);
                 } else {
                     newTrans.match = strdup(match);
-                    newTrans.matchLen = strlen(match);
+                    newTrans.matchLen = (int)strlen(match);
                 }
 
                 Colorize->hm->AddTrans(newTrans);
@@ -832,9 +831,9 @@ static int ReadColorize(CurPos &cp, EColorize *Colorize, const char *ModeName) {
                     return -1;
 
                 Colorize->hm->LastState()->options = options;
-                Colorize->hm->LastState()->nextKwdMatchedState = nextKwdMatchedState;
-                Colorize->hm->LastState()->nextKwdNotMatchedState = nextKwdNotMatchedState;
-                Colorize->hm->LastState()->nextKwdNoCharState = nextKwdNoCharState;
+                Colorize->hm->LastState()->nextKwdMatchedState = (int)nextKwdMatchedState;
+                Colorize->hm->LastState()->nextKwdNotMatchedState = (int)nextKwdNotMatchedState;
+                Colorize->hm->LastState()->nextKwdNoCharState = (int)nextKwdNoCharState;
 
                 if (wordChars && *wordChars) {
                     Colorize->hm->LastState()->wordChars = (char *)malloc(256/8);
@@ -931,7 +930,7 @@ static int ReadMode(CurPos &cp, EMode *Mode, const char * /*ModeName*/) {
                     {
                         const char *val = GetCharStr(cp, len);
                         if (len == 0) return -1;
-                        if (SetModeString(Mode, what, val) != 0) return -1;
+                        if (SetModeString(Mode, (int)what, val) != 0) return -1;
                     }
                     break;
                 case CF_INT:
@@ -939,7 +938,7 @@ static int ReadMode(CurPos &cp, EMode *Mode, const char * /*ModeName*/) {
                         long num;
 
                         if (GetNum(cp, num) == 0) return -1;
-                        if (SetModeNumber(Mode, what, num) != 0) return -1;
+                        if (SetModeNumber(Mode, (int)what, (int)num) != 0) return -1;
                     }
                     break;
                 default:
@@ -980,7 +979,7 @@ static int ReadObject(CurPos &cp, const char *ObjName) {
                 if (GetObj(cp, len) != CF_REGEXP) return -1;
                 if ((regexp = GetCharStr(cp, len)) == 0) return -1;
 
-                if (AddCRegexp(file, line, msg, regexp) == 0) return -1;
+                if (AddCRegexp((int)file, (int)line, (int)msg, regexp) == 0) return -1;
             }
             break;
 #endif
@@ -1008,7 +1007,7 @@ static int ReadObject(CurPos &cp, const char *ObjName) {
                         long num;
 
                         if (GetNum(cp, num) == 0) return -1;
-                        if (SetGlobalNumber(what, num) != 0) return -1;
+                        if (SetGlobalNumber((int)what, (int)num) != 0) return -1;
                     }
                     break;
                 default:
@@ -1219,7 +1218,7 @@ int LoadConfig(int /*argc*/, char ** /*argv*/, char *CfgFileName) {
     }
 
     cp.name = CfgFileName;
-    cp.sz = statbuf.st_size;
+    cp.sz = (int)statbuf.st_size;
     cp.a = buffer;
     cp.c = cp.a + 2 * 4;
     cp.z = cp.a + cp.sz;
