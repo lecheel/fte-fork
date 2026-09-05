@@ -853,9 +853,6 @@ int EView::Whereis(ExState &State) { // lechee
     } else {
         D = getenv("BHOME");
         if (D != NULL) {
-            if (BiosHome) {
-              RTrimS(D,SLASH);
-            }
             strcat(Command,D);
           }
         else {

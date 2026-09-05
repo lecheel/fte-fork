@@ -75,44 +75,9 @@ fte.$(OEXT) \
 commands.$(OEXT) \
 log.$(OEXT)
 
-OS2OBJS = e_os2.$(OEXT)
-
-VIOOBJS = $(OS2OBJS) \
-g_text.$(OEXT) \
-menu_text.$(OEXT) \
-con_os2.$(OEXT) \
-clip_os2.$(OEXT) \
-clip_pmv.$(OEXT) \
-g_nodlg.$(OEXT)
-
-PMOBJS = $(OS2OBJS) \
-g_pm.$(OEXT) \
-clip_os2.$(OEXT) \
-clip_pm.$(OEXT)
-
 UNIXOBJS = \
 e_unix.$(OEXT) \
 memicmp.$(OEXT)
-
-XOBJS = $(UNIXOBJS) \
-g_text.$(OEXT) \
-menu_text.$(OEXT) \
-con_x11.$(OEXT) \
-clip_x11.$(OEXT) \
-con_i18n.$(OEXT) \
-g_nodlg.$(OEXT)
-
-QOBJS = $(UNIXOBJS) \
-g_qt.$(OEXT) \
-g_qt_dlg.$(OEXT) \
-clip_x11.$(OEXT)
-
-SOBJS = $(UNIXOBJS) \
-g_text.$(OEXT) \
-menu_text.$(OEXT) \
-con_slang.$(OEXT) \
-clip_no.$(OEXT) \
-g_nodlg.$(OEXT)
 
 NOBJS = $(UNIXOBJS) \
 g_text.$(OEXT) \
@@ -121,34 +86,3 @@ con_ncurses.$(OEXT) \
 g_unix_pipe.$(OEXT) \
 clip_no.$(OEXT) \
 g_nodlg.$(OEXT)
-
-VOBJS = $(UNIXOBJS) \
-g_text.$(OEXT) \
-menu_text.$(OEXT) \
-con_linux.$(OEXT) \
-clip_no.$(OEXT) \
-g_nodlg.$(OEXT)
-
-MOBJS = $(UNIXOBJS) \
-g_motif.$(OEXT) \
-clip_no.$(OEXT) \
-g_nodlg.$(OEXT)
-
-NTOBJS = \
-g_text.$(OEXT) \
-menu_text.$(OEXT) \
-con_nt.$(OEXT) \
-clip_os2.$(OEXT) \
-g_nodlg.$(OEXT) \
-e_win32.$(OEXT)
-
-DOSP32OBJS = \
-memicmp.$(OEXT) \
-port.$(OEXT) \
-portdos.$(OEXT) \
-g_text.$(OEXT) \
-menu_text.$(OEXT) \
-con_dosx.$(OEXT) \
-clip_no.$(OEXT) \
-g_nodlg.$(OEXT) \
-e_djgpp2.$(OEXT)

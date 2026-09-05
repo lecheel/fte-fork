@@ -12,8 +12,6 @@
 #ifndef __FEATURE_H__
 #define __FEATURE_H__
 
-#undef CONFIG_EMULATE_VI // todo
-
 #define CONFIG_CONFIGURABLE
 #define CONFIG_MOUSE
 #define CONFIG_CLIPBOARD
@@ -43,8 +41,6 @@
 #define CONFIG_REGEXPS
 #define CONFIG_FOLDS
 
-#undef CONFIG_OBJ_HEXEDIT            // todo
-#undef CONFIG_OBJ_VIEWER             // todo
 #define CONFIG_OBJ_LIST
 #define CONFIG_OBJ_FILE
 

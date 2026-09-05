@@ -1,15 +1,13 @@
 # versions of FTE to build
 
 # Versions:
-#  xfte - using XLib (the most stable)
+#  nfte - using ncurses
+#  xfte - using XLib
 
-#  vfte - for Linux console directly (with limitations, see con_linux.cpp)
+TARGETS = nfte
+#TARGETS = xfte nfte
 
-TARGETS = xfte vfte nfte
-#TARGETS = xfte vfte sfte nfte
-#TARGETS = xfte
-
-PRIMARY = xfte
+PRIMARY = nfte
 
 # Comment or uncoment this two flags below if
 # you want to use:
@@ -70,8 +68,6 @@ XLIBDIR  = -L/usr/X11R6/lib -lstdc++
 
 #MINCDIR  = -I/usr/include/Motif1.2
 #MLIBDIR  = -L/usr/lib/Motif1.2
-
-SINCDIR   = -I/usr/include/slang
 
 #######################################################################
 # AIX
@@ -141,7 +137,7 @@ OPTIMIZE = -g # -O -g
 #OPTIMIZE = -O2
 #OPTIMIZE = -O2 -s
 
-CCFLAGS  = $(OPTIMIZE) $(I18NOPTIONS) $(APPOPTIONS) $(COPTIONS) -DUNIX $(UOS) $(INCDIR) $(XINCDIR) $(QINCDIR) $(MINCDIR) $(SINCDIR)
+CCFLAGS  = $(OPTIMIZE) $(I18NOPTIONS) $(APPOPTIONS) $(COPTIONS) -DUNIX $(UOS) $(INCDIR) $(XINCDIR) $(QINCDIR) $(MINCDIR)
 LDFLAGS  = $(OPTIMIZE) $(LIBDIR) $(XLIBDIR) $(QLIBDIR) $(MLIBDIR)
 
 OEXT     = o
@@ -153,11 +149,7 @@ SRCS = $(OBJS:.o=.cpp)
 
 # Need -lXt below if USE_XTINIT is defined
 XLIBS    = -lX11 $(SOCKETLIB)
-#-lmpatrol -lelf
-VLIBS    = -lgpm -lncurses
-# -ltermcap outdated by ncurses
 NLIBS    = -lncurses
-SLIBS    = -lslang
 QLIBS    = -lqt
 #MLIBS    = -lXm -lXp -lXt -lXpm -lXext
 
@@ -195,17 +187,8 @@ xfte: .depend $(OBJS) $(XOBJS)
 #qfte: g_qt.moc g_qt_dlg.moc $(OBJS) $(QOBJS)
 #	$(LD) -o $@ $(LDFLAGS) $(OBJS) $(QOBJS) $(QLIBS) $(XLIBS)
 
-vfte: $(OBJS) $(VOBJS)
-	$(LD) -o $@ $(LDFLAGS) $(OBJS) $(VOBJS) $(VLIBS)
-
-sfte: $(OBJS) $(SOBJS) compkeys
-	$(LD) -o $@ $(LDFLAGS) $(OBJS) $(SOBJS) $(SLIBS)
-
-nfte: $(OBJS) $(NOBJS) compkeys
+nfte: $(OBJS) $(NOBJS)
 	$(LD) -o $@ $(LDFLAGS) $(OBJS) $(NOBJS) $(NLIBS)
-
-compkeys: compkeys.o
-	$(LD) $(LDFLAGS) compkeys.o -o compkeys
 
 #mfte: $(OBJS) $(MOBJS)
 #	$(LD) $(LDFLAGS) $(OBJS) $(MOBJS) $(MLIBS) $(XLIBS) -o mfte
@@ -222,7 +205,7 @@ tags: $(SRCS) $(wildcard *.h)
 	ctags *.h $(SRCS)
 
 clean:
-	rm -f core *.o .depend $(TARGETS) defcfg.h defcfg.cnf cfte fte vfte compkeys tags
+	rm -f core *.o .depend $(TARGETS) defcfg.h defcfg.cnf cfte fte tags
 
 #
 # include dependency files if they exist

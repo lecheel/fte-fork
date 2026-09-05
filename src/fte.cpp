@@ -13,18 +13,12 @@
 #include <locale.h>
 #endif
 
-#if defined(UNIX)
 /* default locations for the configuration files */
 const char *Unix_RCPaths[] = {
     "/usr/local/etc/fte/system.fterc",
     "/etc/fte/system.fterc",
-    "/usr/X11R6/lib/X11/fte/system.fterc",
+    "/usr/local/lib/fte/system.fterc",
 };
-
-// variables used by vfte
-uid_t effuid;
-gid_t effgid;
-#endif /* UNIX */
 
 char ConfigFileName[MAXPATH] = "";
 
@@ -57,119 +51,22 @@ static void Usage() {
         );
 }
 
-#ifndef UNIX
-/*
- * findPathExt() returns a ^ to the suffix in a file name string. If the
- * name contains a suffix, the pointer ^ts to the suffix' dot character,
- * if the name has no suffix the pointer points to the NUL terminator of
- * the file name string.
- * .lib: CBASE.LIB
- */
-static char *findPathExt(char *filename) {
-    char *p, *sps;
-
-    for (p = filename, sps = NULL; *p; p++) {
-        if (ISSLASH(*p))
-            sps = NULL;
-        if (*p == '.')
-            sps = p;
-    }
-    if (sps == NULL)
-        sps = p;
-    return sps;
-}
-#endif
-
-#if defined(NT) && defined(MSVC) && !defined(__WATCOMC__)
-char *getProgramName(char *name) {
-    return _pgmptr;
-}
-#endif
-
-#if defined(OS2) && defined(__EMX__)
-
-// argv[0] on emx does not contain full path
-
-#define INCL_DOS
-#include <os2.h>
-
-char *getProgramName(char *name) {
-    char ProgramName[MAXPATH];
-    PTIB tib;
-    PPIB pib;
-
-    DosGetInfoBlocks(&tib, &pib);
-    if (DosQueryModuleName(pib->pib_hmte, sizeof(ProgramName), ProgramName) != 0)
-        return name;
-    return strdup(ProgramName);
-}
-
-#endif
-
-static int GetConfigFileName(int /*argc*/, char **argv, char *ConfigFileName) {
-    // NOTE: function assumes that ConfigFileName's size is MAXPATH
-
+static int GetConfigFileName(int /*argc*/, char ** /*argv*/, char *ConfigFileName) {
     char CfgName[MAXPATH] = "";
 
     if (ConfigFileName[0] == 0) {
-#if defined(UNIX)
-        // ? use ./.fterc if by current user ?
         ExpandPath("~/.fterc", CfgName, sizeof(CfgName));
-#elif defined(DOS) || defined(DOSP32)
-        strlcpy(CfgName, argv[0], sizeof(CfgName));
-
-        char *extPtr;
-
-        if ((extPtr = findPathExt(CfgName)) != NULL)
-        {
-            *extPtr = 0;
-            strlcat(CfgName, ".cnf", sizeof(CfgName));
-        }
-#elif defined(OS2) || defined(NT)
-        char home[MAXPATH] = "";
-        char *ph;
-#if defined(OS2)
-        ph = getenv("HOME");
-        if (ph) strlcpy(home, ph, sizeof(home));
-#endif
-#if defined(NT)
-        ph = getenv("HOMEDRIVE");
-        if (ph) strlcpy(home, ph, sizeof(home));
-        ph = getenv("HOMEPATH");
-        if (ph) strlcat(home, ph, sizeof(home));
-#endif
-        if (home[0]) {
-            strlcpy(CfgName, home, sizeof(CfgName));
-            Slash(CfgName, 1);
-            strlcat(CfgName, "fte.cnf", sizeof(CfgName));
-        }
-
-        if (!home[0] || access(CfgName, 0) != 0) {
-            strlcpy(CfgName, argv[0], sizeof(CfgName));
-
-            char *extPtr;
-
-            if ((extPtr = findPathExt(CfgName)) != NULL)
-            {
-                *extPtr = 0;
-                strlcat(CfgName, ".cnf", sizeof(CfgName));
-            }
-        }
-#endif
-
         strlcpy(ConfigFileName, CfgName, MAXPATH);
     }
     if (access(ConfigFileName, 0) == 0)
         return 1;
 
-#if defined(UNIX)
     for (unsigned int i = 0; i < sizeof(Unix_RCPaths)/sizeof(Unix_RCPaths[0]); i++) {
         if (access(Unix_RCPaths[i], 0) == 0) {
             strlcpy(ConfigFileName, Unix_RCPaths[i], MAXPATH);
             return 1;
         }
     }
-#endif
     return 0;
 }
 
@@ -285,30 +182,6 @@ static int CmdLoadConfiguration(int &argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-#if defined(_DEBUG) && defined(MSVC) && defined(MSVCDEBUG)
-   _CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_FILE );
-   _CrtSetReportFile( _CRT_WARN, _CRTDBG_FILE_STDERR );
-   _CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_FILE );
-   _CrtSetReportFile( _CRT_ERROR, _CRTDBG_FILE_STDERR );
-   _CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_FILE );
-   _CrtSetReportFile( _CRT_ASSERT, _CRTDBG_FILE_STDERR );
-#endif //_DEBUG && MSVC && MSVCDEBUG
-
-#if defined(__EMX__) || (defined(NT) && defined(MSVC) && !defined(__WATCOMC__))
-    argv[0] = getProgramName(argv[0]);
-#endif
-
-#if defined(UNIX) && defined(LINUX)
-    // security fix - when we need to be suid to access vcsa
-    effuid = geteuid();
-    effgid = getegid();
-
-    if (getuid() != effuid)
-        seteuid(getuid());
-    if (getgid() != effgid)
-        setegid(getgid());
-#endif
-
 #ifdef USE_LOCALE
     // setup locale from environment
     setlocale(LC_ALL, "");
@@ -325,31 +198,8 @@ int main(int argc, char **argv) {
 
     gui->Run();
 
-#if defined(OS2) && !defined(DBMALLOC) && defined(CHECKHEAP)
-    if (_heapchk() != _HEAPOK)
-        DieError(0, "Heap memory is corrupt.");
-#endif
-
     delete gui;
     gui = 0;
 
-#if defined(__EMX__)
-    free(argv[0]);
-#endif
-
-#if defined(OS2) && !defined(DBMALLOC) && defined(CHECKHEAP)
-    if (_heapchk() != _HEAPOK)
-        DieError(0, "Heap memory is corrupt.");
-#endif
-
-#if defined(_DEBUG) && defined(MSVC) && defined(MSVCDEBUG)
-    _CrtSetDbgFlag((_CRTDBG_LEAK_CHECK_DF) | _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG));
-#endif //_DEBUG && MSVC && MSVCDEBUG
-
-#if defined(__DEBUG_ALLOC__)
-    _dump_allocated(64);
-#endif
-
     ENDFUNCRC(0);
-    //return 0;
 }

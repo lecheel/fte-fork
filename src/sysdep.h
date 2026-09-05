@@ -29,145 +29,37 @@
 #include <malloc.h>
 #endif
 
-#if !defined(OS2) && \
-    !defined(NT) && \
-    !defined(DOSP32) && \
-    !defined(LINUX) && \
-    !defined(HPUX) && \
-    !defined(AIX) && \
-    !defined(IRIX) && \
-    !defined(SCO) && \
-    !defined(SUNOS) && \
-    !defined(NCR)
-#    error Target not supported.
-#endif
+#define USE_DIRENT
+#include <dirent.h>
+#include <unistd.h>
+#include <pwd.h>
+#include <fnmatch.h>
 
-#if defined(UNIX) || defined(DJGPP)
-#    define USE_DIRENT
-#endif
-
-#if defined(USE_DIRENT) // also needs fnmatch
-#    include <dirent.h>
-#endif
-
-#if defined(UNIX)
-#    include <unistd.h>
-#    include <pwd.h>
-#    if defined(__CYGWIN__)
-#        include "fnmatch.h"
-#    else
-#        include <fnmatch.h>
-#    endif
-#    define strnicmp strncasecmp
-#    define stricmp strcasecmp
-#    define filecmp strcmp
-     //#    define memicmp strncasecmp   // FIX, fails for nulls
-     extern "C" int memicmp(const void *s1, const void *s2, size_t n);
-#endif
-
-#if defined(OS2)
-#    include <malloc.h>
-#    if !defined(__TOS_OS2__)
-#        include <dos.h>
-#    endif
-#    include <io.h>
-#    include <process.h>
-#    if defined(BCPP) || defined(WATCOM) || defined(__TOS_OS2__)
-#        include <direct.h>
-#    endif
-#    if defined(BCPP)
-#        include <dir.h>
-#    endif
-#    define filecmp stricmp
-#    if !defined(__EMX__)
-#        define NO_NEW_CPP_FEATURES
-#    endif
-#endif
-
-#if defined(DOS) || defined(DOSP32)
-#    include <malloc.h>
-#    include <dos.h>
-#    include <io.h>
-#    include <process.h>
-#    define NO_NEW_CPP_FEATURES
-#    if defined(BCPP)
-#        include <dir.h>
-#    endif
-#    if defined(WATCOM)
-#        include <direct.h>
-#    endif
-#    if defined(DJGPP)
-#        include <dir.h>
-#        include <unistd.h>
-#        undef MAXPATH
-         extern "C" int memicmp(const void *s1, const void *s2, size_t n);
-#    endif
-#    define filecmp stricmp
-#endif
-
-#if defined(NT)
-#    include <malloc.h>
-#    include <dos.h>
-#    include <io.h>
-#    include <process.h>
-#    if defined(MSVC)
-#        include <direct.h>
-#    endif
-#    if defined(WATCOM)
-#        include <direct.h>
-#    endif
-#    if defined(BCPP)
-#        include <dir.h>
-#    endif
-#    if defined(MINGW)
-#        include <dir.h>
-#        define HAVE_BOOL // older versions of MingW may not have it
-#    endif
-#    define filecmp stricmp
-#    define popen _popen
-#    define pclose _pclose
-#endif
+#define strnicmp strncasecmp
+#define stricmp strcasecmp
+#define filecmp strcmp
+extern "C" int memicmp(const void *s1, const void *s2, size_t n);
 
 #ifndef MAXPATH
 #    define MAXPATH 1024
 #endif
 
 #ifndef O_BINARY
-#    define O_BINARY 0   /* defined on OS/2, no difference on unix */
+#    define O_BINARY 0
 #endif
 
-#if defined(OS2) || defined(NT)
-#    if defined(__EMX__) || defined(WATCOM) || defined(__TOS_OS2__)
-#        define FAKE_BEGINTHREAD_NULL NULL,
-#    else
-#        define FAKE_BEGINTHREAD_NULL
-#    endif
-#endif
-
-#if (!defined(__IBMC__) && !defined(__IBMCPP__)) || !defined(OS2)
-#    define _LNK_CONV
-#endif
-
+#define _LNK_CONV
 #define PT_UNIXISH   0
 #define PT_DOSISH    1
+#define PATHTYPE     PT_UNIXISH
 
-#ifndef S_ISDIR  // NT, DOS, DOSP32
-#    ifdef S_IFDIR
-#        define S_ISDIR(mode)  ((mode) & S_IFDIR)
-#    else
-#        define S_ISDIR(mode)  ((mode) & _S_IFDIR)
-#    endif
+#ifndef S_ISDIR
+#    define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
 #endif
 
 #ifndef S_IWGRP
 #define S_IWGRP 0
 #define S_IWOTH 0
-#endif
-
-#if defined(OS2) || defined(NT) || defined(DOSP32) || defined(DOS)
-#define PATHTYPE   PT_DOSISH
-#else
-#define PATHTYPE   PT_UNIXISH
 #endif
 
 #if defined __cplusplus && __cplusplus >= 199707L

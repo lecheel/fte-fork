@@ -61,11 +61,7 @@ int OpenAfterClose = 1;
 int SelectPathname = 0;
 char DefaultModeName[32] = "";
 RxNode *CompletionFilter = NULL;
-#if defined(DOS) || defined(DOSP32)
-char PrintDevice[MAXPATH] = "PRN";
-#else
-char PrintDevice[MAXPATH] = "\\DEV\\PRN";
-#endif
+char PrintDevice[MAXPATH] = "lpr";
 char CompileCommand[256] = "make";
 char SearchPattern[MAXSEARCH] = "";     // lechee
 char GrepName[MAXPATH] = "";            // lechee
@@ -83,8 +79,7 @@ int ScrollBorderX = 0;
 int ScrollBorderY = 0;
 int ScrollJumpX = 8;
 int ScrollJumpY = 1;
-int GUIDialogs = 1;
-int PMDisableAccel = 0;
+int GUIDialogs = 0;
 int SevenBit = 0;
 int WeirdScroll = 0;
 int LoadDesktopMode = 0;
@@ -284,7 +279,7 @@ static int SetGlobalNumber(int what, int number) {
     case FLAG_ScrollJumpX:       ScrollJumpX = number; break;
     case FLAG_ScrollJumpY:       ScrollJumpY = number; break;
     case FLAG_GUIDialogs:        GUIDialogs = number; break;
-    case FLAG_PMDisableAccel:    PMDisableAccel = number; break;
+    case FLAG_PMDisableAccel:    break;
     case FLAG_SevenBit:          SevenBit = number; break;
     case FLAG_WeirdScroll:       WeirdScroll = number; break;
     case FLAG_LoadDesktopMode:   LoadDesktopMode = number; break;
