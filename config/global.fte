@@ -44,7 +44,6 @@ object GLOBAL {
     CompileCommand      = 'make ';
     KeepMessages        = 1;
 
-    CvsCommand          = 'cvs';
 %if(OS_UNIX)
     HelpCommand         = "man";
 %endif
@@ -113,7 +112,4 @@ object GLOBAL {
     CompileRx = { 1, 2, 3, /^([\w:._\-\/\\]+): line (\d+):\s(.*)$/ };
 # perl: <wirawan0>
     CompileRx = { 2, 3, 1, /^(.*) at ([^ ]+) line ([0-9]+)/ };
-    
-    CvsIgnoreRx = /^cvs update: Updating /;
-    CvsIgnoreRx = /^cvs server: Updating /;
 }

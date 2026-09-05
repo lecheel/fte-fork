@@ -984,18 +984,12 @@ static int ReadObject(CurPos &cp, const char *ObjName) {
             }
             break;
 #endif
-#ifdef CONFIG_OBJ_CVS
         case CF_CVSIGNRX:
             {
-                const char *regexp;
-
                 if (GetObj(cp, len) != CF_REGEXP) return -1;
-                if ((regexp = GetCharStr(cp, len)) == 0) return -1;
-
-                if (AddCvsIgnoreRegexp(regexp) == 0) return -1;
+                if (GetCharStr(cp, len) == 0) return -1;
             }
             break;
-#endif
         case CF_SETVAR:
             {
                 long what;
