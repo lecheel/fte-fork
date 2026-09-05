@@ -87,11 +87,7 @@ static int CmdLoadConfiguration(int &argc, char **argv) {
                 if (debug_clean || strcmp(argv[Arg], "--debug") == 0) {
 #ifndef FTE_NO_LOGGING
                     char path[MAXPATH];
-#ifdef UNIX
                     ExpandPath("~/.fte", path, sizeof(path));
-#else
-                    JustDirectory(argv[0], path, sizeof(path));
-#endif
                     Slash(path,1);
                     strlcat(path, "fte.log", sizeof(path));
                     if (debug_clean) unlink(path);

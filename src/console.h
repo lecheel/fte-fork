@@ -87,11 +87,7 @@
 typedef unsigned char TAttr;
 typedef TAttr *PAttr;
 
-#ifdef NTCONSOLE 
-typedef unsigned long TCell;
-#else
 typedef unsigned short TCell;
-#endif
 
 typedef TCell *PCell;
 typedef TCell TDrawBuffer[ConMaxCols];

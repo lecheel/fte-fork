@@ -284,16 +284,7 @@ void EGUI::DispatchKey(GxView *view, TEvent &Event) {
 }
 
 void EGUI::DispatchCommand(GxView *view, TEvent &Event) {
-    if (Event.Msg.Command > 65536 + 16384)
-    { // hack for PM toolbar
-        Event.Msg.Command -= 65536 + 16384;
-        BeginMacro(view);
-        ExState State;
-        State.Macro = 0;
-        State.Pos = 0;
-        ExecCommand(view, Event.Msg.Command, State);
-        Event.What = evNone;
-    } else if (Event.Msg.Command >= 65536) {
+    if (Event.Msg.Command >= 65536) {
         Event.Msg.Command -= 65536;
         ExecMacro(view, Event.Msg.Command);
         Event.What = evNone;
@@ -332,10 +323,6 @@ void EGUI::DispatchEvent(GFrame *frame, GView *view, TEvent &Event) {
         }
     }
     GUI::DispatchEvent(frame, view, Event);
-#if defined(OS2) && !defined(DBMALLOC) && defined(CHECKHEAP)
-    if (_heapchk() != _HEAPOK)
-        DieError(0, "Heap memory is corrupt.");
-#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -677,12 +664,7 @@ int EGUI::findDesktop(char *argv[]) {
             ExpandPath(DESKTOP_NAME, DesktopFileName, sizeof(DesktopFileName));
         else {
             //** Use homedir,
-#ifdef UNIX
             ExpandPath("~/" DESKTOP_NAME, DesktopFileName, sizeof(DesktopFileName));
-#else
-            JustDirectory(argv[0], DesktopFileName, sizeof(DesktopFileName));
-            strlcat(DesktopFileName, DESKTOP_NAME, sizeof(DesktopFileName));
-#endif
         }
         return FileExists(DesktopFileName);
 
@@ -754,14 +736,9 @@ int EGUI::InterfaceInit(int &/*argc*/, char ** /*argv*/) {
 }
 
 #ifdef CONFIG_HISTORY
-void EGUI::DoLoadHistoryOnEntry(int &/*argc*/, char **argv) {
+void EGUI::DoLoadHistoryOnEntry(int &/*argc*/, char ** /*argv*/) {
     if (HistoryFileName[0] == 0) {
-#ifdef UNIX
         ExpandPath("~/.fte-history", HistoryFileName, sizeof(HistoryFileName));
-#else
-        JustDirectory(argv[0], HistoryFileName, sizeof(HistoryFileName));
-        strlcat(HistoryFileName, "fte.his", sizeof(HistoryFileName));
-#endif
     } else {
         char p[256];
 

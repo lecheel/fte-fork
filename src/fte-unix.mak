@@ -2,10 +2,9 @@
 
 TARGETS = nfte
 PRIMARY = nfte
-XMBFLAG = #-DUSE_XMB
 USE_LOCALE = -DUSE_LOCALE
 
-I18NOPTIONS = $(XMBFLAG) $(REMAPFLAG) $(SYSTEM_X_LOCALE) $(USE_LOCALE)
+I18NOPTIONS = $(USE_LOCALE)
 
 APPOPTIONS = -DDEFAULT_INTERNAL_CONFIG
 
@@ -16,34 +15,29 @@ COPTIONS = -Wall -Wpointer-arith -Wconversion -Wwrite-strings \
 CC       = g++ -fno-rtti -fno-exceptions
 LD       = g++ -fno-rtti -fno-exceptions
 UOS      = -DLINUX
-XINCDIR  = -I/usr/X11R6/include
-XLIBDIR  = -L/usr/X11R6/lib -lstdc++
-MOC      = moc
 
 LIBDIR   =
 INCDIR   =
 
 OPTIMIZE = -g # -O -g
 
-CCFLAGS  = $(OPTIMIZE) $(I18NOPTIONS) $(APPOPTIONS) $(COPTIONS) -DUNIX $(UOS) $(INCDIR) $(XINCDIR) $(QINCDIR) $(MINCDIR)
-LDFLAGS  = $(OPTIMIZE) $(LIBDIR) $(XLIBDIR) $(QLIBDIR) $(MLIBDIR)
+CCFLAGS  = $(OPTIMIZE) $(I18NOPTIONS) $(APPOPTIONS) $(COPTIONS) -DUNIX $(UOS) $(INCDIR)
+LDFLAGS  = $(OPTIMIZE) $(LIBDIR)
 
 OEXT     = o
 
-.SUFFIXES: .cpp .o .moc
+.SUFFIXES: .cpp .o
 
 include objs.inc
-SRCS = $(OBJS:.o=.cpp) $(UNIXOBJS:.o=.cpp) $(CFTE_OBJS:.o=.cpp)
+SRCS = $(OBJS:.o=.cpp) $(NOBJS:.o=.cpp) $(CFTE_OBJS:.o=.cpp)
 
 OBJS := $(addprefix obj/,$(OBJS))
 NOBJS := $(addprefix obj/,$(NOBJS))
 CFTE_OBJS := $(addprefix obj/,$(CFTE_OBJS))
 
-XLIBS    = -lX11 $(SOCKETLIB)
 NLIBS    = -lncurses
-QLIBS    = -lqt
 
-.PHONY: all cfte nfte xfte clean
+.PHONY: all cfte nfte clean
 
 all:    cfte $(TARGETS)
 
@@ -56,10 +50,6 @@ obj/%.o: %.cpp | obj
 obj/%.o: %.c | obj
 	$(CC) $(CCFLAGS) -c $< -o $@
 
-.cpp.moc:
-	$(MOC) $< -o $@
-#rm -f fte ; ln -s $(PRIMARY) fte
-
 cfte: $(CFTE_OBJS)
 	$(LD) $(LDFLAGS) $(CFTE_OBJS) -o cfte
 
@@ -68,23 +58,13 @@ obj/c_config.o: defcfg.h
 defcfg.h: defcfg.cnf
 	perl mkdefcfg.pl <defcfg.cnf >defcfg.h
 
-#DEFAULT_FTE_CONFIG = simple.fte
 DEFAULT_FTE_CONFIG = defcfg.fte
-#DEFAULT_FTE_CONFIG = defcfg2.fte
-#DEFAULT_FTE_CONFIG = ../config/main.fte
 
 defcfg.cnf: $(DEFAULT_FTE_CONFIG) cfte
 	./cfte $(DEFAULT_FTE_CONFIG) defcfg.cnf
 
-xfte: .depend $(OBJS) $(XOBJS)
-	$(LD) -o $@ $(LDFLAGS) $(OBJS) $(XOBJS) $(XLIBS)
-
 nfte: $(OBJS) $(NOBJS)
 	$(LD) -o $@ $(LDFLAGS) $(OBJS) $(NOBJS) $(NLIBS)
-
-g_qt.obj: g_qt.moc
-
-g_qt_dlg.obj: g_qt_dlg.moc
 
 .depend: defcfg.h
 	$(CC) -MM $(CCFLAGS) $(SRCS) | sed 's,^\([^ ]*\)\.o:,obj/\1.o:,' > .depend
