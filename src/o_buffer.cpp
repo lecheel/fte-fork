@@ -165,10 +165,12 @@ void EEditPort::HandleEvent(TEvent &Event) {
                 if (Buffer->BeginMacro() == 0)
                     return ;
                 Buffer->TypeChar(Ch);
-                Buffer->GitDirty = 1;
-                struct timeval tv;
-                gettimeofday(&tv, NULL);
-                Buffer->LastModifyTime = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+                if (Buffer->EnableGitGutter) {
+                    Buffer->GitDirty = 1;
+                    struct timeval tv;
+                    gettimeofday(&tv, NULL);
+                    Buffer->LastModifyTime = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+                }
                 Event.What = evNone;
             }
         }
@@ -375,12 +377,6 @@ void EEditPort::HandleMouse(TEvent &Event) {
 }
 
 void EEditPort::UpdateView() {
-    if (Buffer->Modified) {
-        Buffer->GitDirty = 1;
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        Buffer->LastModifyTime = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
-    }
     Buffer->Redraw();
 }
 
@@ -710,7 +706,30 @@ int EBuffer::ExecCommand(int Command, ExState &State) {
 }
 
 void EBuffer::HandleEvent(TEvent &Event) {
+    int oldModified = Modified;
+    int oldUndoPtr = 0;
+#ifdef CONFIG_UNDOREDO
+    oldUndoPtr = US.UndoPtr;
+#endif
+
     EModel::HandleEvent(Event);
+
+    // If a non-printable key command (Enter, Delete, Backspace, etc.)
+    // modified the buffer, mark it git dirty to trigger the live update.
+    // Printable keys are handled directly in EEditPort::HandleEvent.
+    if (EnableGitGutter) {
+        int changed = 0;
+        if (!oldModified && Modified) changed = 1;
+#ifdef CONFIG_UNDOREDO
+        if (oldUndoPtr != US.UndoPtr) changed = 1;
+#endif
+        if (changed) {
+            GitDirty = 1;
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+            LastModifyTime = (unsigned long)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+        }
+    }
 }
 
 int EBuffer::MoveToLine(ExState &State) {
